@@ -1,0 +1,37 @@
+[33mcommit 55be19f6e21977b9f6b334dcb732afce832cff2a[m
+Author: Hürcan ALKAN <hurcan1907@gmail.com>
+Date:   Wed Dec 17 15:10:39 2025 +0300
+
+    feature/version-1: Temizlik
+
+ .bolt/config.json                       |    3 [31m-[m
+ .bolt/prompt                            |    5 [31m-[m
+ .gitignore                              |   25 [31m-[m
+ eslint.config.js                        |   28 [31m-[m
+ index.html                              |   13 [31m-[m
+ package-lock.json                       | 6722 [31m-------------------------------[m
+ package.json                            |   36 [31m-[m
+ postcss.config.js                       |    6 [31m-[m
+ server/hospital.db                      |  Bin [31m28672[m -> [32m0[m bytes
+ server/index.js                         |   39 [31m-[m
+ server/routes/invoices.js               |   28 [31m-[m
+ server/routes/patients.js               |   28 [31m-[m
+ src/App.tsx                             |   36 [31m-[m
+ src/components/InvoiceManagement.tsx    |  740 [31m----[m
+ src/components/Layout.tsx               |  425 [31m--[m
+ src/components/MaterialManagement.tsx   | 1116 [31m-----[m
+ src/components/PatientManagement.tsx    |  926 [31m-----[m
+ src/components/Reports.tsx              | 1006 [31m-----[m
+ src/components/StockCountManagement.tsx | 1578 [31m--------[m
+ src/hooks/useLocalStorage.ts            |   25 [31m-[m
+ src/index.css                           |    3 [31m-[m
+ src/main.tsx                            |  405 [31m--[m
+ src/types.ts                            |  176 [31m-[m
+ src/utils/dataService.ts                |  932 [31m-----[m
+ src/vite-env.d.ts                       |    1 [31m-[m
+ tailwind.config.js                      |    8 [31m-[m
+ tsconfig.app.json                       |   24 [31m-[m
+ tsconfig.json                           |    7 [31m-[m
+ tsconfig.node.json                      |   22 [31m-[m
+ vite.config.ts                          |   10 [31m-[m
+ 30 files changed, 14373 deletions(-)

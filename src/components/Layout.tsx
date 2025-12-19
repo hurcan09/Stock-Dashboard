@@ -1,425 +1,794 @@
-import { ReactNode, useState, useEffect } from 'react';
-import { Eye as Hospital, Package, Users, FileText, BarChart3, ClipboardList, Home, AlertTriangle, TrendingUp, ShoppingCart } from 'lucide-react';
+// src/components/Layout.tsx - TAM GÜNCELLENMİŞ VERSİYON (Arka Plan Düzeltmesi)
+import React, { ReactNode, useState, useEffect, useCallback } from 'react';
+import { 
+  Eye as Hospital, 
+  Package, 
+  Users, 
+  FileText, 
+  ClipboardList, 
+  BarChart3, 
+  LogOut, 
+  Bell, 
+  AlertTriangle,
+  CheckSquare,
+  Menu,
+  X,
+  Home,
+  User,
+  Search,
+  ChevronDown,
+  UserCheck,
+  Clock,
+  Power
+} from 'lucide-react';
 import { dataService } from '../utils/dataService';
+import { DashboardStats, User as UserType, MaterialStatus, StockCountSession, SystemLog } from '../types';
 
 interface LayoutProps {
-  children: ReactNode;
   currentPage: string;
   onPageChange: (page: string) => void;
+  user: UserType;
+  onLogout: () => void;
+  children: ReactNode;
 }
 
-export default function Layout({ children, currentPage, onPageChange }: LayoutProps) {
-  const [dashboardStats, setDashboardStats] = useState({
-    totalMaterials: 0,
-    totalPatients: 0,
-    totalStockValue: 0,
-    criticalStockCount: 0,
-    totalUsageCost: 0,
-    lowStockMaterials: [] as any[],
-    recentActivities: [] as any[],
-    topUsedMaterials: [] as any[],
-  });
+interface Notification {
+  id: string;
+  type: 'warning' | 'info' | 'success' | 'error';
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+  link: string;
+}
 
-  // Dashboard istatistiklerini yükle
-  useEffect(() => {
-    loadDashboardStats();
-  }, []);
-
-  const loadDashboardStats = () => {
-    const stats = dataService.getDashboardStats();
-    setDashboardStats(stats);
+// Statü kartı component'ı
+const StatusCard: React.FC<{
+  status: MaterialStatus;
+  count: number;
+}> = ({ status, count }) => {
+  const statusConfig = {
+    normal: {
+      label: 'Normal Malzemeler',
+      icon: 'N',
+      bgColor: 'bg-green-500/10',
+      textColor: 'text-green-700',
+      borderColor: 'border-green-200',
+      iconBg: 'bg-green-100',
+      iconText: 'text-green-600'
+    },
+    konsinye: {
+      label: 'Konsinye Malzemeler',
+      icon: 'K',
+      bgColor: 'bg-blue-500/10',
+      textColor: 'text-blue-700',
+      borderColor: 'border-blue-200',
+      iconBg: 'bg-blue-100',
+      iconText: 'text-blue-600'
+    },
+    iade: {
+      label: 'İade Malzemeler',
+      icon: 'İ',
+      bgColor: 'bg-red-500/10',
+      textColor: 'text-red-700',
+      borderColor: 'border-red-200',
+      iconBg: 'bg-red-100',
+      iconText: 'text-red-600'
+    },
+    faturalı: {
+      label: 'Faturalı Malzemeler',
+      icon: 'F',
+      bgColor: 'bg-purple-500/10',
+      textColor: 'text-purple-700',
+      borderColor: 'border-purple-200',
+      iconBg: 'bg-purple-100',
+      iconText: 'text-purple-600'
+    }
   };
 
-  // Menü öğeleri - Dashboard eklendi
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'materials', label: 'Malzeme Yönetimi', icon: Package },
-    { id: 'stock-count', label: 'Stok Takip', icon: ClipboardList },
-    { id: 'patients', label: 'Hasta Yönetimi', icon: Users },
-    { id: 'invoices', label: 'Fatura Yönetimi', icon: FileText },
-    { id: 'reports', label: 'Raporlar', icon: BarChart3 },
-  ];
-
-  // Kritik stok uyarısı kontrolü
-  const hasCriticalStock = dashboardStats.criticalStockCount > 0;
+  const config = statusConfig[status];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-blue-600 text-white shadow-lg">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Hospital className="h-8 w-8" />
-              <div>
-                <h1 className="text-xl font-bold">Osmangazi Göz Hastanesi</h1>
-                <p className="text-blue-100 text-sm">Stok Takip Sistemi</p>
-              </div>
-            </div>
-            
-            {/* Dashboard İstatistikleri - Hızlı Bakış */}
-            <div className="hidden lg:flex items-center space-x-6">
-              {/* Toplam Malzeme */}
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1">
-                  <Package className="h-4 w-4" />
-                  <span className="text-sm font-medium">Malzeme</span>
-                </div>
-                <div className="text-lg font-bold">{dashboardStats.totalMaterials}</div>
-              </div>
-              
-              {/* Toplam Hasta */}
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1">
-                  <Users className="h-4 w-4" />
-                  <span className="text-sm font-medium">Hasta</span>
-                </div>
-                <div className="text-lg font-bold">{dashboardStats.totalPatients}</div>
-              </div>
-              
-              {/* Kritik Stok Uyarısı */}
-              {hasCriticalStock && (
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-1">
-                    <AlertTriangle className="h-4 w-4 text-yellow-300" />
-                    <span className="text-sm font-medium">Kritik Stok</span>
-                  </div>
-                  <div className="text-lg font-bold text-yellow-300">{dashboardStats.criticalStockCount}</div>
-                </div>
-              )}
-              
-              {/* Stok Değeri */}
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-1">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm font-medium">Stok Değeri</span>
-                </div>
-                <div className="text-lg font-bold">₺{dashboardStats.totalStockValue.toFixed(0)}</div>
-              </div>
-            </div>
-          </div>
+    <div 
+      className={`${config.bgColor} backdrop-blur-sm rounded-xl shadow-sm border ${config.borderColor} p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-md`}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={`text-sm font-medium ${config.textColor}`}>
+            {config.label}
+          </p>
+          <p className={`text-2xl font-bold mt-1 ${config.textColor}`}>
+            {count}
+          </p>
         </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-6">
-        {/* Navigasyon Menüsü */}
-        <nav className="bg-white rounded-lg shadow-md mb-6">
-          <div className="flex flex-wrap">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentPage === item.id;
-              
-              // Dashboard için özel badge
-              const showBadge = item.id === 'materials' && dashboardStats.criticalStockCount > 0;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onPageChange(item.id)}
-                  className={`relative flex items-center space-x-2 px-6 py-4 font-medium border-b-2 transition-all ${
-                    isActive
-                      ? 'border-blue-500 text-blue-600 bg-blue-50'
-                      : 'border-transparent text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{item.label}</span>
-                  
-                  {/* Kritik Stok Bildirimi */}
-                  {showBadge && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-
-        {/* Dashboard İçeriği - Sadece dashboard sayfasında gösterilecek */}
-        {currentPage === 'dashboard' && (
-          <div className="mb-6">
-            <DashboardOverview 
-              stats={dashboardStats} 
-              onNavigate={onPageChange}
-            />
-          </div>
-        )}
-
-        {/* Ana İçerik */}
-        <main>{children}</main>
+        <div className={`h-10 w-10 rounded-full ${config.iconBg} flex items-center justify-center`}>
+          <span className={`text-sm font-bold ${config.iconText}`}>
+            {config.icon}
+          </span>
+        </div>
       </div>
     </div>
   );
-}
+};
 
-// Dashboard Bileşeni
-interface DashboardOverviewProps {
-  stats: {
-    totalMaterials: number;
-    totalPatients: number;
-    totalStockValue: number;
-    criticalStockCount: number;
-    totalUsageCost: number;
-    lowStockMaterials: any[];
-    recentActivities: any[];
-    topUsedMaterials: any[];
+// Bildirim öğesi component'ı
+const NotificationItem: React.FC<{
+  notification: Notification;
+  onClick: (id: string, link: string) => void;
+}> = ({ notification, onClick }) => {
+  const getIcon = () => {
+    switch (notification.type) {
+      case 'warning': return <AlertTriangle className="h-5 w-5" />;
+      case 'success': return <CheckSquare className="h-5 w-5" />;
+      case 'error': return <AlertTriangle className="h-5 w-5" />;
+      default: return <Bell className="h-5 w-5" />;
+    }
   };
-  onNavigate: (page: string) => void;
-}
 
-function DashboardOverview({ stats, onNavigate }: DashboardOverviewProps) {
+  const getIconColor = () => {
+    switch (notification.type) {
+      case 'warning': return 'bg-orange-100 text-orange-600';
+      case 'success': return 'bg-green-100 text-green-600';
+      case 'error': return 'bg-red-100 text-red-600';
+      default: return 'bg-blue-100 text-blue-600';
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Hoş Geldiniz Başlığı */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Hoş Geldiniz!</h2>
-            <p className="text-gray-600 mt-1">Osmangazi Göz Hastanesi Stok Takip Sistemine genel bakış</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">Son Güncelleme</p>
-            <p className="text-sm font-medium text-gray-700">
-              {new Date().toLocaleDateString('tr-TR', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+    <div
+      onClick={() => onClick(notification.id, notification.link)}
+      className={`px-4 py-3 border-b border-blue-50 hover:bg-blue-50/80 cursor-pointer transition-colors ${
+        notification.read ? 'opacity-70' : 'bg-blue-50/50'
+      }`}
+    >
+      <div className="flex items-start space-x-3">
+        <div className={`p-2 rounded-full ${getIconColor()}`}>
+          {getIcon()}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-blue-900">
+              {notification.title}
             </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Hızlı İstatistik Kartları */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Toplam Malzeme Kartı */}
-        <div 
-          className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => onNavigate('materials')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Toplam Malzeme</p>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{stats.totalMaterials}</p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <Package className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-gray-500">
-            <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-            <span>Stok sisteminde kayıtlı</span>
-          </div>
-        </div>
-
-        {/* Toplam Hasta Kartı */}
-        <div 
-          className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => onNavigate('patients')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Toplam Hasta</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{stats.totalPatients}</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <Users className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-gray-500">
-            <ShoppingCart className="h-4 w-4 text-blue-500 mr-1" />
-            <span>Malzeme kullanım kaydı</span>
-          </div>
-        </div>
-
-        {/* Stok Değeri Kartı */}
-        <div 
-          className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => onNavigate('reports')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Stok Değeri</p>
-              <p className="text-3xl font-bold text-purple-600 mt-2">₺{stats.totalStockValue.toFixed(0)}</p>
-            </div>
-            <div className="bg-purple-100 p-3 rounded-full">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-gray-500">
-            <FileText className="h-4 w-4 text-purple-500 mr-1" />
-            <span>Toplam envanter değeri</span>
-          </div>
-        </div>
-
-        {/* Kritik Stok Kartı */}
-        <div 
-          className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow border-l-4 border-red-500"
-          onClick={() => onNavigate('materials')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Kritik Stok</p>
-              <p className="text-3xl font-bold text-red-600 mt-2">{stats.criticalStockCount}</p>
-            </div>
-            <div className="bg-red-100 p-3 rounded-full">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-            </div>
-          </div>
-            <div className="mt-4 flex items-center text-sm text-red-500">
-            <AlertTriangle className="h-4 w-4 mr-1" />
-            <span>Dikkat gerektiren ürün</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Alt Grid - Kritik Stok ve Son Aktiviteler */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Kritik Stok Uyarıları */}
-        {stats.lowStockMaterials.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-red-600">Kritik Stok Uyarıları</h3>
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-            </div>
-            <div className="space-y-3">
-              {stats.lowStockMaterials.slice(0, 5).map((material, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                  <div className="flex-1">
-                    <div className="font-medium text-red-800">{material.name}</div>
-                    <div className="text-sm text-red-600">
-                      Mevcut: {material.currentStock} {material.unit} • Min: {material.minStock} {material.unit}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-red-800">
-                      ₺{(material.currentStock * material.unitPrice).toFixed(2)}
-                    </div>
-                    <div className="text-xs text-red-600">Stok Değeri</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {stats.lowStockMaterials.length > 5 && (
-              <div className="mt-4 text-center">
-                <button 
-                  onClick={() => onNavigate('materials')}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium"
-                >
-                  +{stats.lowStockMaterials.length - 5} daha göster
-                </button>
-              </div>
+            {!notification.read && (
+              <div className="h-2 w-2 rounded-full bg-orange-500"></div>
             )}
           </div>
-        )}
+          <p className="text-sm text-blue-700 mt-1">
+            {notification.message}
+          </p>
+          <p className="text-xs text-blue-400 mt-2">
+            {notification.time}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-        {/* Son Aktiviteler */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Son Aktiviteler</h3>
-            <ClipboardList className="h-5 w-5 text-gray-500" />
+// Sol Menü Component'i
+const SideMenu: React.FC<{
+  currentPage: string;
+  onPageChange: (page: string) => void;
+  user: UserType;
+}> = ({ currentPage, onPageChange, user }) => {
+  const [showUserSection, setShowUserSection] = useState(false);
+  
+  const menuItems = [
+    { id: 'dashboard', label: 'Ana Sayfa', icon: <Home className="h-5 w-5" />, permission: 'viewDashboard' },
+    { id: 'materials', label: 'Malzeme', icon: <Package className="h-5 w-5" />, permission: 'manageMaterials' },
+    { id: 'stock-count', label: 'Stok Takip', icon: <ClipboardList className="h-5 w-5" />, permission: 'manageMaterials' },
+    { id: 'patients', label: 'Hasta', icon: <Users className="h-5 w-5" />, permission: 'managePatients' },
+    { id: 'invoices', label: 'Fatura', icon: <FileText className="h-5 w-5" />, permission: 'manageInvoices' },
+    { id: 'reports', label: 'Raporlar', icon: <BarChart3 className="h-5 w-5" />, permission: 'viewReports' },
+    { id: 'users', label: 'Kullanıcılar', icon: <User className="h-5 w-5" />, permission: 'manageUsers' },
+  ];
+
+  const filteredMenuItems = menuItems.filter(item => 
+    !item.permission || user?.permissions?.[item.permission as keyof UserType['permissions']]
+  );
+
+  // Aktif oturumlar
+  const activeSessions = dataService.getStockCountSessions().filter(s => s.status === 'devam-ediyor');
+  const recentActivities = dataService.getLogs().slice(0, 5);
+
+  return (
+    <div className="h-full flex flex-col bg-gradient-to-b from-blue-950 to-blue-900 text-white">
+      {/* Logo ve Hastane Adı */}
+      <div className="p-6 border-b border-blue-800">
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <Hospital className="h-10 w-10 text-orange-400" />
           </div>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {stats.recentActivities.slice(0, 6).map((activity, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className={`flex-shrink-0 w-2 h-2 mt-2 rounded-full ${
-                  activity.action.includes('YENİ') ? 'bg-green-500' :
-                  activity.action.includes('GÜNCELLE') ? 'bg-blue-500' :
-                  activity.action.includes('SİL') ? 'bg-red-500' : 'bg-gray-500'
-                }`}></div>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-sm text-gray-700">{activity.performedBy}</span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(activity.performedAt).toLocaleTimeString('tr-TR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{activity.details}</p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                      {activity.module}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div>
+            <h1 className="text-xl font-bold">Osmangazi Göz</h1>
+            <p className="text-blue-300 text-sm">Stok Takip Sistemi</p>
           </div>
-          {stats.recentActivities.length === 0 && (
-            <div className="text-center py-4 text-gray-500">
-              <ClipboardList className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-              <p>Henüz aktivite kaydı bulunmuyor</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* En Çok Kullanılan Malzemeler */}
-      {stats.topUsedMaterials.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">En Çok Kullanılan Malzemeler</h3>
-            <BarChart3 className="h-5 w-5 text-gray-500" />
+      {/* Kullanıcı Bilgileri */}
+      <div className="p-4 border-b border-blue-800">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white font-bold text-lg shadow-lg">
+            {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {stats.topUsedMaterials.map((material, index) => (
-              <div key={index} className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600 mb-2">{material.quantity}</div>
-                <div className="text-sm font-medium text-gray-700 mb-1">{material.name}</div>
-                <div className="text-xs text-gray-500">₺{material.cost.toFixed(2)}</div>
+          <div className="flex-1">
+            <p className="font-semibold">{user?.name}</p>
+            <p className="text-sm text-blue-300 capitalize">{user?.role}</p>
+          </div>
+          <button 
+            onClick={() => setShowUserSection(!showUserSection)}
+            className="p-2 rounded-lg hover:bg-blue-800 transition-colors"
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${showUserSection ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Kullanıcı Detayları */}
+      {showUserSection && (
+        <div className="px-4 py-3 bg-blue-900/50">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-blue-300">Departman:</span>
+              <span className="font-medium">{user?.department}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-blue-300">Email:</span>
+              <span className="font-medium">{user?.email}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-blue-300">Yetkiler:</span>
+              <div className="flex flex-wrap gap-1 justify-end">
+                {user?.permissions?.manageMaterials && (
+                  <span className="px-2 py-1 bg-blue-700 text-xs rounded-full">Malzeme</span>
+                )}
+                {user?.permissions?.managePatients && (
+                  <span className="px-2 py-1 bg-green-700 text-xs rounded-full">Hasta</span>
+                )}
+                {user?.permissions?.manageInvoices && (
+                  <span className="px-2 py-1 bg-purple-700 text-xs rounded-full">Fatura</span>
+                )}
+                {user?.permissions?.viewReports && (
+                  <span className="px-2 py-1 bg-orange-700 text-xs rounded-full">Rapor</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ana Menü */}
+      <div className="flex-1 p-4 overflow-y-auto">
+        <div className="space-y-1">
+          {filteredMenuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onPageChange(item.id)}
+              className={`w-full flex items-center space-x-3 px-4 py-3 font-medium rounded-lg transition-all ${
+                currentPage === item.id
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
+                  : 'text-blue-200 hover:text-white hover:bg-blue-800'
+              }`}
+            >
+              <div className={`${currentPage === item.id ? 'text-white' : 'text-blue-300'}`}>
+                {item.icon}
+              </div>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Aktif Oturumlar */}
+      <div className="p-4 border-t border-blue-800">
+        <h3 className="font-semibold text-blue-300 mb-3 flex items-center">
+          <UserCheck className="h-4 w-4 mr-2" />
+          Aktif Oturumlar ({activeSessions.length})
+        </h3>
+        <div className="space-y-2 max-h-40 overflow-y-auto">
+          {activeSessions.map((session) => (
+            <div key={session.id} className="bg-blue-900/50 rounded-lg p-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{session.createdBy}</p>
+                  <p className="text-xs text-blue-300">{session.sessionNo}</p>
+                </div>
+                <button className="p-1 hover:bg-blue-800 rounded">
+                  <Power className="h-3 w-3 text-red-400" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Son Aktiviteler - Sadece Admin için */}
+      {user?.permissions?.manageUsers && (
+        <div className="p-4 border-t border-blue-800">
+          <h3 className="font-semibold text-blue-300 mb-3 flex items-center">
+            <Clock className="h-4 w-4 mr-2" />
+            Son Aktiviteler
+          </h3>
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {recentActivities.map((log: SystemLog, index) => (
+              <div key={index} className="bg-blue-900/30 rounded-lg p-2">
+                <p className="text-xs font-medium">{log.performedBy}</p>
+                <p className="text-xs text-blue-300 truncate">{log.details}</p>
+                <p className="text-xs text-blue-400 text-right">
+                  {new Date(log.performedAt || '').toLocaleTimeString('tr-TR')}
+                </p>
               </div>
             ))}
           </div>
         </div>
       )}
+    </div>
+  );
+};
 
-      {/* Hızlı Erişim Butonları */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Hızlı Erişim</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button
-            onClick={() => onNavigate('materials')}
-            className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors text-left"
-          >
-            <Package className="h-6 w-6 text-blue-600 mb-2" />
-            <div className="font-medium text-blue-800">Malzeme Ekle</div>
-            <div className="text-sm text-blue-600">Yeni malzeme kaydı oluştur</div>
-          </button>
-          
-          <button
-            onClick={() => onNavigate('patients')}
-            className="p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors text-left"
-          >
-            <Users className="h-6 w-6 text-green-600 mb-2" />
-            <div className="font-medium text-green-800">Hasta Ekle</div>
-            <div className="text-sm text-green-600">Yeni hasta kaydı oluştur</div>
-          </button>
-          
-          <button
-            onClick={() => onNavigate('invoices')}
-            className="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors text-left"
-          >
-            <FileText className="h-6 w-6 text-purple-600 mb-2" />
-            <div className="font-medium text-purple-800">Fatura Ekle</div>
-            <div className="text-sm text-purple-600">Yeni fatura kaydı oluştur</div>
-          </button>
-          
-          <button
-            onClick={() => onNavigate('stock-count')}
-            className="p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors text-left"
-          >
-            <ClipboardList className="h-6 w-6 text-orange-600 mb-2" />
-            <div className="font-medium text-orange-800">Stok Sayımı</div>
-            <div className="text-sm text-orange-600">Yeni sayım oturumu başlat</div>
-          </button>
-        </div>
+export default function Layout({ children, currentPage, onPageChange, user, onLogout }: LayoutProps) {
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    totalMaterials: 0,
+    totalPatients: 0,
+    totalStockValue: 0,
+    criticalStockCount: 0,
+    totalUsageCost: 0,
+    lowStockMaterials: [],
+    recentActivities: [],
+    topUsedMaterials: [],
+    totalInvoices: 0,
+    totalInvoiceAmount: 0,
+    todayUsageCost: 0,
+    weeklySales: 0,
+    monthlySales: 0,
+    todayUsagesCount: 0,
+    activeSessions: 0,
+    statusSummary: {
+      normal: 0,
+      konsinye: 0,
+      iade: 0,
+      faturalı: 0
+    },
+    totalSessions: 0,
+    recentSessions: [],
+    quickCountSessions: 0,
+    todayCounts: 0,
+    pendingApprovals: 0,
+    dailyPlan: {
+      surgeries: 0,
+      appointments: 0,
+      emergencyCases: 0,
+      mealsServed: 0
+    },
+    hospitalStats: {
+      totalDoctors: 0,
+      totalNurses: 0,
+      bedOccupancy: 0,
+      todayRevenue: 0
+    },
+    userStats: {
+      activeUsers: 0,
+      activeSessions: 0,
+      recentLogins: 0
+    }
+  });
+
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    loadDashboardStats();
+    loadNotifications();
+    
+    // 30 saniyede bir dashboard istatistiklerini güncelle
+    const interval = setInterval(loadDashboardStats, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadDashboardStats = useCallback(() => {
+    const stats = dataService.getDashboardStats();
+    setDashboardStats(stats);
+  }, []);
+
+  const loadNotifications = useCallback(() => {
+    const criticalMaterials = dataService.getLowStockMaterials();
+    const expiredMaterials = dataService.getExpiredMaterials();
+    const expiringSoonMaterials = dataService.getExpiringSoonMaterials(7);
+    const recentSessions = dataService.getStockCountSessions()
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+
+    const newNotifications: Notification[] = [];
+
+    // Kritik stok bildirimleri
+    criticalMaterials.forEach(material => {
+      newNotifications.push({
+        id: `critical-${material.id}-${Date.now()}`,
+        type: 'warning',
+        title: '⚠️ Kritik Stok Uyarısı',
+        message: `${material.name} malzemesi kritik stok seviyesinde (${material.currentStock} ${material.unit})`,
+        time: 'Şimdi',
+        read: false,
+        link: 'materials'
+      });
+    });
+
+    // Son kullanma tarihi geçmiş malzemeler
+    expiredMaterials.forEach(material => {
+      newNotifications.push({
+        id: `expired-${material.id}-${Date.now()}`,
+        type: 'error',
+        title: '⏰ Son Kullanma Tarihi Geçmiş',
+        message: `${material.name} malzemesinin son kullanma tarihi geçmiş (${material.expirationDate})`,
+        time: 'Şimdi',
+        read: false,
+        link: 'materials'
+      });
+    });
+
+    // Yakında bitecek malzemeler
+    expiringSoonMaterials.forEach(material => {
+      newNotifications.push({
+        id: `expiring-${material.id}-${Date.now()}`,
+        type: 'warning',
+        title: '📅 Yakında Bitecek',
+        message: `${material.name} malzemesinin son kullanma tarihi yaklaşıyor (${material.expirationDate})`,
+        time: 'Şimdi',
+        read: false,
+        link: 'materials'
+      });
+    });
+
+    // Yeni sayım oturumları
+    recentSessions.forEach(session => {
+      newNotifications.push({
+        id: `session-${session.id}-${Date.now()}`,
+        type: 'info',
+        title: '📋 Yeni Sayım Oturumu',
+        message: `${session.sessionNo} - ${session.invoiceNo} oturumu oluşturuldu`,
+        time: new Date(session.createdAt).toLocaleDateString('tr-TR'),
+        read: false,
+        link: 'stock-count'
+      });
+    });
+
+    // Eski okunmuş bildirimleri koru
+    const existingReadNotifications = notifications.filter(n => n.read);
+    const allNotifications = [...newNotifications, ...existingReadNotifications]
+      .sort((a, b) => b.time.localeCompare(a.time))
+      .slice(0, 20);
+
+    setNotifications(allNotifications);
+  }, [notifications]);
+
+  const hasCriticalStock = dashboardStats.criticalStockCount > 0;
+  const unreadNotifications = notifications.filter(n => !n.read).length;
+
+  const markNotificationAsRead = (id: string) => {
+    setNotifications(notifications.map(notif => 
+      notif.id === id ? { ...notif, read: true } : notif
+    ));
+  };
+
+  const markAllNotificationsAsRead = useCallback(() => {
+    setNotifications(notifications.map(notif => ({ ...notif, read: true })));
+  }, [notifications]);
+
+  const handleNotificationClick = (id: string, link: string) => {
+    markNotificationAsRead(id);
+    onPageChange(link);
+    setShowNotifications(false);
+  };
+
+  const getStatusCount = (status: MaterialStatus) => {
+    return dashboardStats.statusSummary?.[status] || 0;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-blue-900 flex">
+      {/* Sabit Sol Menü - Desktop - ARKA PLAN BOŞLUĞU DÜZELTMESİ */}
+      <div className="hidden lg:flex lg:w-80 xl:w-96 flex-shrink-0 sticky top-0 h-screen z-50">
+        <SideMenu 
+          currentPage={currentPage}
+          onPageChange={onPageChange}
+          user={user}
+        />
       </div>
+
+      {/* Ana İçerik Alanı - ARKA PLAN BOŞLUĞU DÜZELTMESİ */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Modern Header */}
+        <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white shadow-lg sticky top-0 z-40">
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              {/* Sol Taraf: Logo ve Menü Toggle (Mobil) */}
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="lg:hidden p-2 rounded-lg hover:bg-blue-800 transition-colors"
+                  aria-label="Menüyü aç/kapat"
+                >
+                  {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                </button>
+                
+                <div className="flex items-center space-x-3 lg:hidden">
+                  <div className="relative">
+                    <Hospital className="h-8 w-8 text-orange-400" />
+                    {hasCriticalStock && (
+                      <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></div>
+                    )}
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold">Osmangazi Göz</h1>
+                    <p className="text-blue-200 text-xs">Stok Takip Sistemi</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Orta: Sayfa Başlığı */}
+              <div className="hidden lg:flex flex-1 justify-center">
+                <div className="bg-blue-800/50 backdrop-blur-sm px-6 py-2 rounded-full">
+                  <h2 className="text-lg font-semibold text-center">
+                    {currentPage === 'dashboard' && 'Ana Sayfa'}
+                    {currentPage === 'materials' && 'Malzeme Yönetimi'}
+                    {currentPage === 'stock-count' && 'Stok Takip'}
+                    {currentPage === 'patients' && 'Hasta Yönetimi'}
+                    {currentPage === 'invoices' && 'Fatura Yönetimi'}
+                    {currentPage === 'reports' && 'Raporlar'}
+                    {currentPage === 'users' && 'Kullanıcı Yönetimi'}
+                  </h2>
+                </div>
+              </div>
+              
+              {/* Sağ Taraf: Kullanıcı ve Bildirimler */}
+              <div className="flex items-center space-x-4">
+                {/* Mobil Sayfa Başlığı */}
+                <div className="lg:hidden text-center">
+                  <h2 className="text-sm font-semibold">
+                    {currentPage === 'dashboard' && 'Ana Sayfa'}
+                    {currentPage === 'materials' && 'Malzeme'}
+                    {currentPage === 'stock-count' && 'Stok'}
+                    {currentPage === 'patients' && 'Hasta'}
+                    {currentPage === 'invoices' && 'Fatura'}
+                    {currentPage === 'reports' && 'Raporlar'}
+                    {currentPage === 'users' && 'Kullanıcılar'}
+                  </h2>
+                </div>
+                
+                {/* Bildirimler */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowNotifications(!showNotifications);
+                      setShowUserMenu(false);
+                    }}
+                    className="relative p-2 rounded-full bg-blue-800 hover:bg-blue-700 transition-colors shadow-md"
+                    title="Bildirimler"
+                    aria-label="Bildirimler"
+                  >
+                    <Bell className="h-6 w-6" />
+                    {unreadNotifications > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-xs font-bold">
+                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {/* Bildirimler Paneli */}
+                  {showNotifications && (
+                    <div className="fixed lg:absolute right-4 top-20 lg:top-full lg:mt-2 w-96 max-w-[90vw] bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-blue-200/30 py-2 z-50">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-blue-100">
+                        <h3 className="font-bold text-lg text-blue-900">Bildirimler</h3>
+                        <div className="flex items-center space-x-2">
+                          {unreadNotifications > 0 && (
+                            <button
+                              onClick={markAllNotificationsAsRead}
+                              className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+                            >
+                              Tümünü okundu işaretle
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setShowNotifications(false)}
+                            className="text-blue-500 hover:text-blue-700"
+                            aria-label="Bildirimleri kapat"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="max-h-[60vh] overflow-y-auto">
+                        {notifications.length > 0 ? (
+                          notifications.map((notification) => (
+                            <NotificationItem
+                              key={notification.id}
+                              notification={notification}
+                              onClick={handleNotificationClick}
+                            />
+                          ))
+                        ) : (
+                          <div className="px-4 py-8 text-center">
+                            <Bell className="h-12 w-12 text-blue-300 mx-auto mb-3" />
+                            <p className="text-blue-500">Bildirim bulunmuyor</p>
+                            <p className="text-sm text-blue-400 mt-1">Tüm işlemleriniz güncel</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="px-4 py-3 border-t border-blue-100">
+                        <button
+                          onClick={() => {
+                            setShowNotifications(false);
+                            onPageChange('reports');
+                          }}
+                          className="w-full text-center font-medium text-blue-600 hover:text-blue-800 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                        >
+                          Tüm bildirimleri görüntüle →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Kullanıcı Menüsü */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(!showUserMenu);
+                      setShowNotifications(false);
+                    }}
+                    className="flex items-center space-x-3 px-4 py-2 rounded-xl bg-blue-800 hover:bg-blue-700 transition-colors shadow-md"
+                    aria-label="Kullanıcı menüsü"
+                  >
+                    <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white font-bold shadow-sm">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="text-left hidden lg:block">
+                      <p className="text-sm font-semibold">{user?.name}</p>
+                      <p className="text-xs text-blue-200 capitalize">{user?.role}</p>
+                    </div>
+                  </button>
+                  
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-blue-200/30 py-2 z-50">
+                      <div className="px-4 py-3 border-b border-blue-100">
+                        <p className="font-semibold text-blue-900">{user?.name}</p>
+                        <p className="text-sm text-blue-600">{user?.email}</p>
+                        <div className="mt-2 flex items-center space-x-2">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full capitalize">
+                            {user?.department}
+                          </span>
+                          <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full capitalize">
+                            {user?.role}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="py-2">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            onPageChange('dashboard');
+                          }}
+                          className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition-colors flex items-center space-x-3"
+                        >
+                          <Home className="h-4 w-4" />
+                          <span>Ana Sayfa</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            // Profil sayfası eklenecek
+                          }}
+                          className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition-colors flex items-center space-x-3"
+                        >
+                          <User className="h-4 w-4" />
+                          <span>Profilim</span>
+                        </button>
+                        <div className="border-t border-gray-100 my-2"></div>
+                        <button
+                          onClick={onLogout}
+                          className="w-full px-4 py-2 text-left font-medium text-red-600 hover:bg-red-50/80 transition-colors flex items-center space-x-3 hover:text-red-700"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>Çıkış Yap</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Mobil Menü Overlay */}
+        {showMobileMenu && (
+          <div className="lg:hidden fixed inset-0 z-50">
+            <div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowMobileMenu(false)}
+            />
+            <div className="absolute left-0 top-0 h-full w-80 bg-gradient-to-b from-blue-950 to-blue-900 text-white shadow-2xl">
+              <SideMenu 
+                currentPage={currentPage}
+                onPageChange={(page) => {
+                  onPageChange(page);
+                  setShowMobileMenu(false);
+                }}
+                user={user}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Ana İçerik - ARKA PLAN BOŞLUĞU DÜZELTMESİ */}
+        <main className="flex-1 overflow-auto p-4 lg:p-6 bg-gradient-to-br from-blue-950 to-blue-900">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/40 p-4 lg:p-6 min-h-[calc(100vh-12rem)]">
+            {children}
+          </div>
+        </main>
+
+        {/* Footer - ARKA PLAN BOŞLUĞU DÜZELTMESİ */}
+        <footer className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="mb-4 md:mb-0">
+              <h3 className="text-lg font-bold flex items-center">
+                <div className="relative mr-2">
+                  <Hospital className="h-5 w-5 text-orange-400" />
+                  {hasCriticalStock && (
+                    <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></div>
+                  )}
+                </div>
+                Osmangazi Göz Hastanesi
+              </h3>
+              <p className="text-blue-200 text-sm">Stok Takip Sistemi v3.0</p>
+              <div className="mt-2 flex items-center space-x-2">
+                <span className="px-2 py-1 bg-blue-700/50 text-xs rounded-full">
+                  Kullanıcı: {user?.name}
+                </span>
+                <span className="px-2 py-1 bg-orange-500/50 text-xs rounded-full capitalize">
+                  Rol: {user?.role}
+                </span>
+              </div>
+            </div>
+            
+            <div className="text-center md:text-right">
+              <p className="font-medium">© {new Date().getFullYear()} Osmangazi Göz. Tüm Hakları Saklıdır</p>
+              <div className="flex flex-wrap justify-center md:justify-end gap-3 mt-2">
+                <div className="flex items-center space-x-2">
+                  <Package className="h-4 w-4 text-orange-400" />
+                  <span className="text-sm">Malzeme: <span className="font-bold">{dashboardStats.totalMaterials}</span></span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="h-4 w-4 text-red-400" />
+                  <span className="text-sm">Kritik: <span className="font-bold">{dashboardStats.criticalStockCount}</span></span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Search className="h-4 w-4 text-green-400" />
+                  <span className="text-sm">Değer: <span className="font-bold">₺{dashboardStats.totalStockValue.toLocaleString('tr-TR')}</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+
+      {/* Genel Overlay'ler */}
+      {(showNotifications || showUserMenu) && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => {
+            setShowNotifications(false);
+            setShowUserMenu(false);
+          }}
+        />
+      )}
     </div>
   );
 }

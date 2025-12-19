@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, User, Edit2, ShoppingCart, Eye, Barcode, Trash2, Filter } from 'lucide-react';
+import { Plus, Search, User, Edit2, ShoppingCart, Eye, Trash2, Barcode, FileText, Download, Filter } from 'lucide-react';
 import { Patient, PatientMaterialUsage, Material } from '../types';
 import { dataService } from '../utils/dataService';
 
@@ -66,7 +66,7 @@ export default function PatientManagement() {
       module: 'HASTA_YÖNETİMİ',
       recordId: patientData.tcNo,
       details: `${patientData.name} ${patientData.surname} hastası eklendi`,
-      performedBy: dataService.getCurrentUser().name,
+      performedBy: 'System',
     });
 
     loadPatients();
@@ -83,14 +83,14 @@ export default function PatientManagement() {
       module: 'HASTA_YÖNETİMİ',
       recordId: patient?.tcNo || id,
       details: `${patient?.name} ${patient?.surname} hastası güncellendi`,
-      performedBy: dataService.getCurrentUser().name,
+      performedBy: 'System',
     });
 
     loadPatients();
     setEditingPatient(null);
   };
 
-  // Hasta silme fonksiyonu - DÜZELTİLDİ
+  // Hasta silme fonksiyonu
   const handleDeletePatient = (id: string) => {
     const patient = patients.find(p => p.id === id);
     if (confirm(`"${patient?.name} ${patient?.surname}" hastasını silmek istediğinizden emin misiniz?`)) {
@@ -108,7 +108,7 @@ export default function PatientManagement() {
         module: 'HASTA_YÖNETİMİ',
         recordId: patient?.tcNo || id,
         details: `${patient?.name} ${patient?.surname} hastası ve ${patientUsages.length} malzeme kullanım kaydı silindi`,
-        performedBy: dataService.getCurrentUser().name,
+        performedBy: 'System',
       });
 
       loadPatients();
@@ -121,11 +121,12 @@ export default function PatientManagement() {
     setShowQuickUsage(true);
   };
 
-  // Barkod ile malzeme kullanımı fonksiyonu - DÜZELTİLDİ
+  // Barkod ile malzeme kullanımı fonksiyonu
   const handleAddMaterialUsageWithBarcode = (usageData: {
     barcode: string;
     quantity: number;
     notes: string;
+    procedureFee?: number;
   }) => {
     if (!selectedPatient) return;
 
@@ -150,6 +151,7 @@ export default function PatientManagement() {
         totalCost: usageData.quantity * material.unitPrice,
         usageDate: new Date().toISOString(),
         notes: usageData.notes,
+        procedureFee: usageData.procedureFee || 0,
       };
 
       dataService.savePatientMaterialUsage(patientUsage);
@@ -163,8 +165,8 @@ export default function PatientManagement() {
         action: 'MALZEME_KULLANIMI',
         module: 'HASTA_YÖNETİMİ',
         recordId: usageData.barcode,
-        details: `${selectedPatient.name} ${selectedPatient.surname} hastası için ${material.name} (${usageData.barcode}) kullanıldı - Miktar: ${usageData.quantity}`,
-        performedBy: dataService.getCurrentUser().name,
+        details: `${selectedPatient.name} ${selectedPatient.surname} hastası için ${material.name} (${usageData.barcode}) kullanıldı - Miktar: ${usageData.quantity} - İşlem Ücreti: ₺${usageData.procedureFee || 0}`,
+        performedBy: 'System',
       });
 
       loadPatients();
@@ -194,18 +196,18 @@ export default function PatientManagement() {
       action: 'MALZEME_KULLANIMI',
       module: 'HASTA_YÖNETİMİ',
       recordId: usage.materialId,
-      details: `${patient?.name} ${patient?.surname} hastası için ${material?.name} kullanıldı - Miktar: ${usage.quantity}`,
-      performedBy: dataService.getCurrentUser().name,
+      details: `${patient?.name} ${patient?.surname} hastası için ${material?.name} kullanıldı - Miktar: ${usage.quantity} - İşlem Ücreti: ₺${usage.procedureFee || 0}`,
+      performedBy: 'System',
     });
 
     setMaterials(dataService.getMaterials());
     setShowMaterialUsage(false);
   };
 
-  // Hasta başına toplam maliyet hesaplama
+  // Hasta başına toplam maliyet hesaplama (malzeme + işlem ücreti)
   const getTotalCostForPatient = (patientId: string) => {
     const usages = dataService.getPatientMaterialUsage().filter(usage => usage.patientId === patientId);
-    return usages.reduce((total, usage) => total + usage.totalCost, 0);
+    return usages.reduce((total, usage) => total + usage.totalCost + (usage.procedureFee || 0), 0);
   };
 
   // Hasta malzeme kullanımlarını getirme
@@ -213,22 +215,109 @@ export default function PatientManagement() {
     return dataService.getPatientMaterialUsage().filter(usage => usage.patientId === patientId);
   };
 
+  // Excel export fonksiyonu
+  const handleExportExcel = () => {
+    const headers = ['Ad', 'Soyad', 'TC Kimlik No', 'Telefon', 'Adres', 'Kayıt Tarihi', 'Toplam Maliyet'];
+    const data = filteredPatients.map(patient => [
+      patient.name,
+      patient.surname,
+      patient.tcNo,
+      patient.phone,
+      patient.address,
+      new Date(patient.createdAt).toLocaleDateString('tr-TR'),
+      getTotalCostForPatient(patient.id).toFixed(2)
+    ]);
+    
+    const csvContent = [headers, ...data]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `hastalar_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Hasta detaylarını PDF olarak indirme
+  const handleExportPatientDetails = (patient: Patient) => {
+    const usages = getPatientUsages(patient.id);
+    const totalCost = getTotalCostForPatient(patient.id);
+    
+    // Basit bir PDF içeriği oluştur (gerçek uygulamada PDF kütüphanesi kullanılır)
+    const content = `
+      HASTA DETAY RAPORU
+      ==================
+      
+      Hasta Bilgileri:
+      ----------------
+      Ad Soyad: ${patient.name} ${patient.surname}
+      TC Kimlik No: ${patient.tcNo}
+      Telefon: ${patient.phone}
+      Adres: ${patient.address}
+      Kayıt Tarihi: ${new Date(patient.createdAt).toLocaleDateString('tr-TR')}
+      
+      Malzeme Kullanım Geçmişi:
+      -------------------------
+      ${usages.length > 0 ? usages.map((usage, index) => {
+        const material = materials.find(m => m.id === usage.materialId);
+        return `
+        ${index + 1}. ${material?.name || 'Bilinmeyen Malzeme'}
+           Tarih: ${new Date(usage.usageDate).toLocaleDateString('tr-TR')}
+           Miktar: ${usage.quantity} ${material?.unit || 'adet'}
+           Birim Fiyat: ₺${usage.unitPrice.toFixed(2)}
+           Malzeme Toplam: ₺${usage.totalCost.toFixed(2)}
+           İşlem Ücreti: ₺${(usage.procedureFee || 0).toFixed(2)}
+           Toplam: ₺${(usage.totalCost + (usage.procedureFee || 0)).toFixed(2)}
+           Notlar: ${usage.notes || 'Yok'}
+        `;
+      }).join('') : 'Henüz malzeme kullanımı bulunmuyor.'}
+      
+      Toplam Maliyet: ₺${totalCost.toFixed(2)}
+      
+      Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}
+    `;
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `hasta_${patient.tcNo}_${new Date().toISOString().split('T')[0]}.txt`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Başlık ve Yeni Hasta Butonu */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Hasta Yönetimi</h2>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="h-5 w-5" />
-          <span>Yeni Hasta</span>
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={handleExportExcel}
+            className="bg-green-600/90 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Download className="h-5 w-5" />
+            <span>Excel Export</span>
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-blue-600/90 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Yeni Hasta</span>
+          </button>
+        </div>
       </div>
 
       {/* Ana İçerik */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white/60 backdrop-blur-sm rounded-lg shadow-sm p-6 border border-gray-200/40">
         {/* Arama Çubuğu */}
         <div className="mb-6">
           <div className="relative">
@@ -236,7 +325,7 @@ export default function PatientManagement() {
             <input
               type="text"
               placeholder="Hasta adı, soyadı, TC kimlik no veya telefon ara..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -244,19 +333,19 @@ export default function PatientManagement() {
         </div>
 
         {/* Sütun Filtreleri */}
-        <div className="grid grid-cols-5 gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-5 gap-2 mb-4 p-3 bg-gray-50/60 rounded-lg">
           <div className="relative">
             <input
               type="text"
               placeholder="Ad ara..."
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white/80"
               value={columnFilters.name || ''}
               onChange={(e) => handleColumnFilter('name', e.target.value)}
             />
             {columnFilters.name && (
               <button
                 onClick={() => clearColumnFilter('name')}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 ×
               </button>
@@ -266,14 +355,14 @@ export default function PatientManagement() {
             <input
               type="text"
               placeholder="Soyad ara..."
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white/80"
               value={columnFilters.surname || ''}
               onChange={(e) => handleColumnFilter('surname', e.target.value)}
             />
             {columnFilters.surname && (
               <button
                 onClick={() => clearColumnFilter('surname')}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 ×
               </button>
@@ -283,14 +372,14 @@ export default function PatientManagement() {
             <input
               type="text"
               placeholder="TC No ara..."
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white/80"
               value={columnFilters.tcNo || ''}
               onChange={(e) => handleColumnFilter('tcNo', e.target.value)}
             />
             {columnFilters.tcNo && (
               <button
                 onClick={() => clearColumnFilter('tcNo')}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 ×
               </button>
@@ -300,14 +389,14 @@ export default function PatientManagement() {
             <input
               type="text"
               placeholder="Telefon ara..."
-              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white/80"
               value={columnFilters.phone || ''}
               onChange={(e) => handleColumnFilter('phone', e.target.value)}
             />
             {columnFilters.phone && (
               <button
                 onClick={() => clearColumnFilter('phone')}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 ×
               </button>
@@ -333,7 +422,7 @@ export default function PatientManagement() {
             </thead>
             <tbody>
               {filteredPatients.map((patient) => (
-                <tr key={patient.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr key={patient.id} className="border-b border-gray-100 hover:bg-gray-50/60">
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-gray-400" />
@@ -354,10 +443,30 @@ export default function PatientManagement() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex space-x-2">
+                      {/* Detay Görüntüle Butonu */}
+                      <button
+                        onClick={() => {
+                          setSelectedPatient(patient);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 p-1 transition-colors"
+                        title="Detayları Görüntüle"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+
+                      {/* PDF İndirme Butonu */}
+                      <button
+                        onClick={() => handleExportPatientDetails(patient)}
+                        className="text-red-600 hover:text-red-800 p-1 transition-colors"
+                        title="Detayları İndir"
+                      >
+                        <FileText className="h-4 w-4" />
+                      </button>
+                      
                       {/* Düzenle Butonu */}
                       <button
                         onClick={() => setEditingPatient(patient)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
+                        className="text-yellow-600 hover:text-yellow-800 p-1 transition-colors"
                         title="Düzenle"
                       >
                         <Edit2 className="h-4 w-4" />
@@ -366,7 +475,7 @@ export default function PatientManagement() {
                       {/* Hızlı Malzeme Kullanım Butonu */}
                       <button
                         onClick={() => handleQuickMaterialUsage(patient)}
-                        className="text-green-600 hover:text-green-800 p-1"
+                        className="text-green-600 hover:text-green-800 p-1 transition-colors"
                         title="Hızlı Malzeme Kullanımı (Barkod)"
                       >
                         <Barcode className="h-4 w-4" />
@@ -378,27 +487,16 @@ export default function PatientManagement() {
                           setSelectedPatient(patient);
                           setShowMaterialUsage(true);
                         }}
-                        className="text-orange-600 hover:text-orange-800 p-1"
+                        className="text-orange-600 hover:text-orange-800 p-1 transition-colors"
                         title="Malzeme Kullanımı"
                       >
                         <ShoppingCart className="h-4 w-4" />
                       </button>
                       
-                      {/* Detay Görüntüle Butonu */}
-                      <button
-                        onClick={() => {
-                          setSelectedPatient(patient);
-                        }}
-                        className="text-purple-600 hover:text-purple-800 p-1"
-                        title="Detayları Görüntüle"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      
                       {/* Sil Butonu */}
                       <button
                         onClick={() => handleDeletePatient(patient.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
+                        className="text-red-600 hover:text-red-800 p-1 transition-colors"
                         title="Sil"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -409,6 +507,46 @@ export default function PatientManagement() {
               ))}
             </tbody>
           </table>
+
+          {/* Boş durum */}
+          {filteredPatients.length === 0 && (
+            <div className="text-center py-12">
+              <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Hasta bulunamadı</h3>
+              <p className="text-gray-500 mb-4">
+                {searchTerm || Object.keys(columnFilters).length > 0 
+                  ? 'Arama kriterlerinize uygun hasta bulunamadı.'
+                  : 'Henüz hiç hasta eklenmemiş.'
+                }
+              </p>
+              {(searchTerm || Object.keys(columnFilters).length > 0) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setColumnFilters({});
+                  }}
+                  className="bg-blue-600/90 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Filtreleri Temizle
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Sayfa Bilgisi */}
+        <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+          <div className="text-sm text-gray-600">
+            Toplam <span className="font-semibold">{filteredPatients.length}</span> hasta
+            {patients.length !== filteredPatients.length && (
+              <span> (filtrelenmiş)</span>
+            )}
+          </div>
+          <div className="text-sm text-gray-600">
+            Toplam Maliyet: <span className="font-semibold text-green-600">
+              ₺{filteredPatients.reduce((total, patient) => total + getTotalCostForPatient(patient.id), 0).toFixed(2)}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -419,6 +557,7 @@ export default function PatientManagement() {
           usages={getPatientUsages(selectedPatient.id)}
           materials={materials}
           onClose={() => setSelectedPatient(null)}
+          onExport={() => handleExportPatientDetails(selectedPatient)}
         />
       )}
 
@@ -484,13 +623,20 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // TC Kimlik No validasyonu
+    if (formData.tcNo.length !== 11 || !/^\d+$/.test(formData.tcNo)) {
+      alert('TC Kimlik No 11 haneli ve sadece rakamlardan oluşmalıdır!');
+      return;
+    }
+
     onSave(formData);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <h3 className="text-lg font-semibold mb-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 border border-gray-200/60">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">
           {patient ? 'Hasta Bilgilerini Düzenle' : 'Yeni Hasta Ekle'}
         </h3>
         
@@ -503,7 +649,7 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
               <input
                 type="text"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
@@ -516,7 +662,7 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
               <input
                 type="text"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
                 value={formData.surname}
                 onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
               />
@@ -531,10 +677,13 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
               type="text"
               required
               maxLength={11}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              pattern="[0-9]{11}"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               value={formData.tcNo}
-              onChange={(e) => setFormData({ ...formData, tcNo: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, tcNo: e.target.value.replace(/\D/g, '') })}
+              placeholder="11 haneli TC Kimlik No"
             />
+            <p className="text-xs text-gray-500 mt-1">11 haneli ve sadece rakamlardan oluşmalıdır</p>
           </div>
           
           <div>
@@ -543,9 +692,10 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
             </label>
             <input
               type="tel"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="5XX XXX XX XX"
             />
           </div>
           
@@ -554,17 +704,18 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
               Adres
             </label>
             <textarea
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               rows={3}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Hasta adres bilgileri..."
             />
           </div>
           
           <div className="flex space-x-3 pt-4">
             <button
               type="submit"
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              className="flex-1 bg-blue-600/90 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
             >
               {patient ? 'Güncelle' : 'Ekle'}
             </button>
@@ -586,7 +737,7 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
 interface QuickMaterialUsageModalProps {
   patient: Patient;
   materials: Material[];
-  onSave: (usage: { barcode: string; quantity: number; notes: string }) => void;
+  onSave: (usage: { barcode: string; quantity: number; notes: string; procedureFee?: number }) => void;
   onClose: () => void;
 }
 
@@ -594,6 +745,7 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
   const [barcode, setBarcode] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
+  const [procedureFee, setProcedureFee] = useState<number>(0);
 
   const currentMaterial = materials.find(m => m.barcode === barcode);
 
@@ -614,16 +766,17 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
       return;
     }
 
-    onSave({ barcode, quantity, notes });
+    onSave({ barcode, quantity, notes, procedureFee });
     setBarcode('');
     setQuantity(1);
     setNotes('');
+    setProcedureFee(0);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <h3 className="text-lg font-semibold mb-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 border border-gray-200/60">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">
           Hızlı Malzeme Kullanımı - {patient.name} {patient.surname}
         </h3>
         
@@ -635,7 +788,7 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
             <input
               type="text"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               value={barcode}
               onChange={(e) => setBarcode(e.target.value)}
               placeholder="Barkodu taratın veya girin"
@@ -644,7 +797,7 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
           </div>
 
           {currentMaterial && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="bg-green-50/80 border border-green-200 rounded-lg p-3">
               <h4 className="font-semibold text-green-800 mb-2">Malzeme Bilgileri</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><span className="font-medium">Ad:</span> {currentMaterial.name}</div>
@@ -665,7 +818,7 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
               type="number"
               min="1"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
             />
@@ -678,10 +831,25 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              İşlem Ücreti (₺)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
+              value={procedureFee}
+              onChange={(e) => setProcedureFee(parseFloat(e.target.value) || 0)}
+              placeholder="İşlem ücretini girin"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Notlar
             </label>
             <textarea
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -693,7 +861,7 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
             <button
               type="submit"
               disabled={!barcode || !currentMaterial || quantity > (currentMaterial?.currentStock || 0)}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              className="flex-1 bg-green-600/90 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors"
             >
               Kullanımı Kaydet
             </button>
@@ -723,9 +891,11 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
   const [selectedMaterialId, setSelectedMaterialId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
+  const [procedureFee, setProcedureFee] = useState<number>(0);
 
   const selectedMaterial = materials.find(m => m.id === selectedMaterialId);
   const totalCost = selectedMaterial ? selectedMaterial.unitPrice * quantity : 0;
+  const totalWithFee = totalCost + procedureFee;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -736,25 +906,17 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
       return;
     }
 
-    onSave({
-      patientId: patient.id,
-      materialId: selectedMaterialId,
-      quantity,
-      unitPrice: selectedMaterial.unitPrice,
-      totalCost,
-      usageDate: new Date().toISOString(),
-      notes,
-    });
 
     setSelectedMaterialId('');
     setQuantity(1);
     setNotes('');
+    setProcedureFee(0);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <h3 className="text-lg font-semibold mb-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 border border-gray-200/60">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800">
           Malzeme Kullanımı - {patient.name} {patient.surname}
         </h3>
         
@@ -765,7 +927,7 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
             </label>
             <select
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               value={selectedMaterialId}
               onChange={(e) => setSelectedMaterialId(e.target.value)}
             >
@@ -788,7 +950,7 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
               type="number"
               min="1"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
             />
@@ -801,10 +963,25 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              İşlem Ücreti (₺)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
+              value={procedureFee}
+              onChange={(e) => setProcedureFee(parseFloat(e.target.value) || 0)}
+              placeholder="İşlem ücretini girin"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Notlar
             </label>
             <textarea
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -812,10 +989,16 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
             />
           </div>
           
-          {totalCost > 0 && (
-            <div className="bg-blue-50 p-3 rounded-lg">
+          {(totalCost > 0 || procedureFee > 0) && (
+            <div className="bg-blue-50/80 p-3 rounded-lg">
               <p className="text-sm text-blue-800">
-                Toplam Maliyet: <span className="font-semibold">₺{totalCost.toFixed(2)}</span>
+                Malzeme Maliyeti: <span className="font-semibold">₺{totalCost.toFixed(2)}</span>
+              </p>
+              <p className="text-sm text-blue-800">
+                İşlem Ücreti: <span className="font-semibold">₺{procedureFee.toFixed(2)}</span>
+              </p>
+              <p className="text-sm text-blue-800 font-bold">
+                Toplam: <span className="font-semibold">₺{totalWithFee.toFixed(2)}</span>
               </p>
             </div>
           )}
@@ -824,7 +1007,7 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
             <button
               type="submit"
               disabled={!selectedMaterial || quantity > (selectedMaterial?.currentStock || 0)}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              className="flex-1 bg-green-600/90 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors"
             >
               Kullanımı Kaydet
             </button>
@@ -848,78 +1031,158 @@ interface PatientDetailsProps {
   usages: PatientMaterialUsage[];
   materials: Material[];
   onClose: () => void;
+  onExport: () => void;
 }
 
-function PatientDetails({ patient, usages, materials, onClose }: PatientDetailsProps) {
-  const totalCost = usages.reduce((sum, usage) => sum + usage.totalCost, 0);
-
+function PatientDetails({ patient, usages, materials, onClose, onExport }: PatientDetailsProps) {
   const getMaterialName = (materialId: string) => {
     const material = materials.find(m => m.id === materialId);
     return material ? material.name : 'Bilinmeyen Malzeme';
   };
 
+  const getMaterialBarcode = (materialId: string) => {
+    const material = materials.find(m => m.id === materialId);
+    return material ? material.barcode : '-';
+  };
+
+  const totalMaterialCost = usages.reduce((sum, usage) => sum + usage.totalCost, 0);
+  const totalProcedureFee = usages.reduce((sum, usage) => sum + (usage.procedureFee || 0), 0);
+  const totalCost = totalMaterialCost + totalProcedureFee;
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-semibold">Hasta Detayları</h3>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          ✕ Kapat
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="space-y-2">
-          <p><span className="font-medium">Ad Soyad:</span> {patient.name} {patient.surname}</p>
-          <p><span className="font-medium">TC Kimlik No:</span> {patient.tcNo}</p>
-          <p><span className="font-medium">Telefon:</span> {patient.phone}</p>
-          <p><span className="font-medium">Kayıt Tarihi:</span> {new Date(patient.createdAt).toLocaleDateString('tr-TR')}</p>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-2xl p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto border border-gray-200/60">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-800">
+            {patient.name} {patient.surname} - Detaylı Bilgiler
+          </h3>
+          <div className="flex space-x-2">
+            <button
+              onClick={onExport}
+              className="bg-red-600/90 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            >
+              <FileText className="h-5 w-5" />
+              <span>Detayları İndir</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 text-2xl transition-colors"
+            >
+              ✕
+            </button>
+          </div>
         </div>
+
+        {/* Hasta Bilgileri */}
+        <div className="grid grid-cols-2 gap-6 mb-8">
+          <div className="bg-gray-50/60 p-4 rounded-lg">
+            <h4 className="font-semibold mb-3 text-gray-800">Kişisel Bilgiler</h4>
+            <div className="space-y-2 text-sm">
+              <div><span className="font-medium">TC Kimlik No:</span> {patient.tcNo}</div>
+              <div><span className="font-medium">Telefon:</span> {patient.phone}</div>
+              <div><span className="font-medium">Adres:</span> {patient.address || 'Belirtilmemiş'}</div>
+              <div><span className="font-medium">Kayıt Tarihi:</span> {new Date(patient.createdAt).toLocaleDateString('tr-TR')}</div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50/60 p-4 rounded-lg">
+            <h4 className="font-semibold mb-3 text-gray-800">Toplam Maliyet Özeti</h4>
+            <div className="space-y-2 text-sm">
+              <div><span className="font-medium">Malzeme Toplamı:</span> ₺{totalMaterialCost.toFixed(2)}</div>
+              <div><span className="font-medium">İşlem Ücretleri:</span> ₺{totalProcedureFee.toFixed(2)}</div>
+              <div className="border-t border-gray-300 pt-2">
+                <span className="font-bold">Genel Toplam:</span> ₺{totalCost.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Malzeme Kullanım Geçmişi */}
         <div>
-          <p><span className="font-medium">Adres:</span></p>
-          <p className="text-gray-600">{patient.address}</p>
-          <div className="mt-4 p-3 bg-green-50 rounded-lg">
-            <p className="text-green-800 font-semibold">Toplam Maliyet: ₺{totalCost.toFixed(2)}</p>
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-semibold text-gray-800">Malzeme Kullanım Geçmişi</h4>
+            <span className="text-sm text-gray-600">{usages.length} kayıt</span>
           </div>
-        </div>
-      </div>
-
-      <div>
-        <h4 className="text-lg font-semibold mb-4">Malzeme Kullanım Geçmişi</h4>
-        {usages.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Tarih</th>
-                  <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Malzeme</th>
-                  <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Miktar</th>
-                  <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Birim Fiyat</th>
-                  <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Toplam</th>
-                  <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Notlar</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usages.map((usage) => (
-                  <tr key={usage.id} className="border-b border-gray-100">
-                    <td className="py-2 px-3 text-sm">
-                      {new Date(usage.usageDate).toLocaleDateString('tr-TR')}
-                    </td>
-                    <td className="py-2 px-3 text-sm">{getMaterialName(usage.materialId)}</td>
-                    <td className="py-2 px-3 text-sm">{usage.quantity}</td>
-                    <td className="py-2 px-3 text-sm">₺{usage.unitPrice.toFixed(2)}</td>
-                    <td className="py-2 px-3 text-sm font-semibold">₺{usage.totalCost.toFixed(2)}</td>
-                    <td className="py-2 px-3 text-sm text-gray-600">{usage.notes || '-'}</td>
+          {usages.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">Henüz malzeme kullanımı bulunmuyor.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Tarih</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Malzeme</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Barkod</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Miktar</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Birim Fiyat</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Malzeme Toplam</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">İşlem Ücreti</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Toplam</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Notlar</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-8">Henüz malzeme kullanımı kaydedilmemiş.</p>
-        )}
+                </thead>
+                <tbody>
+                  {usages.map((usage) => {
+                    const material = materials.find(m => m.id === usage.materialId);
+                    const usageTotal = usage.totalCost + (usage.procedureFee || 0);
+                    
+                    return (
+                      <tr key={usage.id} className="border-b border-gray-100 hover:bg-gray-50/60">
+                        <td className="py-2 px-4 text-sm">
+                          {new Date(usage.usageDate).toLocaleDateString('tr-TR')}
+                        </td>
+                        <td className="py-2 px-4 text-sm">
+                          {getMaterialName(usage.materialId)}
+                          {material && (
+                            <div className="text-xs text-gray-500">
+                              {material.category} • {material.supplier}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-2 px-4 text-sm text-gray-600">
+                          {getMaterialBarcode(usage.materialId)}
+                        </td>
+                        <td className="py-2 px-4 text-sm">
+                          {usage.quantity} {material?.unit || 'adet'}
+                        </td>
+                        <td className="py-2 px-4 text-sm">₺{usage.unitPrice.toFixed(2)}</td>
+                        <td className="py-2 px-4 text-sm">₺{usage.totalCost.toFixed(2)}</td>
+                        <td className="py-2 px-4 text-sm">
+                          {usage.procedureFee ? `₺${usage.procedureFee.toFixed(2)}` : '-'}
+                        </td>
+                        <td className="py-2 px-4 text-sm font-semibold">
+                          ₺{usageTotal.toFixed(2)}
+                        </td>
+                        <td className="py-2 px-4 text-sm text-gray-600 max-w-xs">
+                          {usage.notes || '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-gray-50/60">
+                    <td colSpan={5} className="py-3 px-4 text-right font-semibold">Genel Toplam:</td>
+                    <td className="py-3 px-4 font-semibold">₺{totalMaterialCost.toFixed(2)}</td>
+                    <td className="py-3 px-4 font-semibold">₺{totalProcedureFee.toFixed(2)}</td>
+                    <td className="py-3 px-4 font-bold text-green-600">₺{totalCost.toFixed(2)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Kapat Butonu */}
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={onClose}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-6 rounded-lg font-medium transition-colors"
+          >
+            Kapat
+          </button>
+        </div>
       </div>
     </div>
   );
