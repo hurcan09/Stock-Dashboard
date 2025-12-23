@@ -1,4 +1,4 @@
-// src/components/Layout.tsx - TAM GÜNCELLENMİŞ VERSİYON (Arka Plan Düzeltmesi)
+// src/components/Layout.tsx - GÜNCELLENMİŞ VE TAM UYUMLU VERSİYON
 import React, { ReactNode, useState, useEffect, useCallback } from 'react';
 import { 
   Eye as Hospital, 
@@ -19,10 +19,13 @@ import {
   ChevronDown,
   UserCheck,
   Clock,
-  Power
+  Power,
+  Settings,
+  Shield,
+  Activity
 } from 'lucide-react';
 import { dataService } from '../utils/dataService';
-import { DashboardStats, User as UserType, MaterialStatus, StockCountSession, SystemLog } from '../types';
+import { DashboardStats, User as UserType, MaterialStatus, SystemLog } from '../types';
 
 interface LayoutProps {
   currentPage: string;
@@ -51,38 +54,38 @@ const StatusCard: React.FC<{
     normal: {
       label: 'Normal Malzemeler',
       icon: 'N',
-      bgColor: 'bg-green-500/10',
+      bgColor: 'bg-green-50',
       textColor: 'text-green-700',
       borderColor: 'border-green-200',
       iconBg: 'bg-green-100',
-      iconText: 'text-green-600'
+      iconText: 'text-green-700'
     },
     konsinye: {
       label: 'Konsinye Malzemeler',
       icon: 'K',
-      bgColor: 'bg-blue-500/10',
+      bgColor: 'bg-blue-50',
       textColor: 'text-blue-700',
       borderColor: 'border-blue-200',
       iconBg: 'bg-blue-100',
-      iconText: 'text-blue-600'
+      iconText: 'text-blue-700'
     },
     iade: {
       label: 'İade Malzemeler',
       icon: 'İ',
-      bgColor: 'bg-red-500/10',
+      bgColor: 'bg-red-50',
       textColor: 'text-red-700',
       borderColor: 'border-red-200',
       iconBg: 'bg-red-100',
-      iconText: 'text-red-600'
+      iconText: 'text-red-700'
     },
     faturalı: {
       label: 'Faturalı Malzemeler',
       icon: 'F',
-      bgColor: 'bg-purple-500/10',
+      bgColor: 'bg-purple-50',
       textColor: 'text-purple-700',
       borderColor: 'border-purple-200',
       iconBg: 'bg-purple-100',
-      iconText: 'text-purple-600'
+      iconText: 'text-purple-700'
     }
   };
 
@@ -90,14 +93,14 @@ const StatusCard: React.FC<{
 
   return (
     <div 
-      className={`${config.bgColor} backdrop-blur-sm rounded-xl shadow-sm border ${config.borderColor} p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-md`}
+      className={`${config.bgColor} rounded-xl shadow-sm border ${config.borderColor} p-4 transition-all duration-300 hover:shadow-md hover:border-${config.borderColor.split('-')[1]}-300`}
     >
       <div className="flex items-center justify-between">
         <div>
           <p className={`text-sm font-medium ${config.textColor}`}>
             {config.label}
           </p>
-          <p className={`text-2xl font-bold mt-1 ${config.textColor}`}>
+          <p className={`text-2xl font-bold mt-1 text-gray-900`}>
             {count}
           </p>
         </div>
@@ -137,8 +140,8 @@ const NotificationItem: React.FC<{
   return (
     <div
       onClick={() => onClick(notification.id, notification.link)}
-      className={`px-4 py-3 border-b border-blue-50 hover:bg-blue-50/80 cursor-pointer transition-colors ${
-        notification.read ? 'opacity-70' : 'bg-blue-50/50'
+      className={`px-4 py-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors ${
+        notification.read ? 'opacity-70' : 'bg-blue-50'
       }`}
     >
       <div className="flex items-start space-x-3">
@@ -147,17 +150,17 @@ const NotificationItem: React.FC<{
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-blue-900">
+            <p className="font-semibold text-gray-900">
               {notification.title}
             </p>
             {!notification.read && (
               <div className="h-2 w-2 rounded-full bg-orange-500"></div>
             )}
           </div>
-          <p className="text-sm text-blue-700 mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             {notification.message}
           </p>
-          <p className="text-xs text-blue-400 mt-2">
+          <p className="text-xs text-gray-500 mt-2">
             {notification.time}
           </p>
         </div>
@@ -181,28 +184,34 @@ const SideMenu: React.FC<{
     { id: 'patients', label: 'Hasta', icon: <Users className="h-5 w-5" />, permission: 'managePatients' },
     { id: 'invoices', label: 'Fatura', icon: <FileText className="h-5 w-5" />, permission: 'manageInvoices' },
     { id: 'reports', label: 'Raporlar', icon: <BarChart3 className="h-5 w-5" />, permission: 'viewReports' },
-    { id: 'users', label: 'Kullanıcılar', icon: <User className="h-5 w-5" />, permission: 'manageUsers' },
   ];
+
+  // Kullanıcı yönetimi sadece admin için
+  if (user?.permissions?.manageUsers) {
+    menuItems.push({ id: 'users', label: 'Kullanıcılar', icon: <User className="h-5 w-5" />, permission: 'manageUsers' });
+  }
 
   const filteredMenuItems = menuItems.filter(item => 
     !item.permission || user?.permissions?.[item.permission as keyof UserType['permissions']]
   );
 
-  // Aktif oturumlar
-  const activeSessions = dataService.getStockCountSessions().filter(s => s.status === 'devam-ediyor');
+  // Son Aktiviteler - Sadece Admin için
   const recentActivities = dataService.getLogs().slice(0, 5);
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-blue-950 to-blue-900 text-white">
+    <div className="h-full flex flex-col bg-gradient-to-b from-[#0F1B5D] to-[#1E3A8A] text-white">
       {/* Logo ve Hastane Adı */}
-      <div className="p-6 border-b border-blue-800">
+      <div className="p-6 border-b border-blue-900">
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <Hospital className="h-10 w-10 text-orange-400" />
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-xl">
+              <Hospital className="h-7 w-7 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full"></div>
           </div>
           <div>
-            <h1 className="text-xl font-bold">Osmangazi Göz</h1>
-            <p className="text-blue-300 text-sm">Stok Takip Sistemi</p>
+            <h1 className="text-xl font-bold text-white">Osmangazi Göz</h1>
+            <p className="text-orange-400 text-sm">Stok Takip Sistemi</p>
           </div>
         </div>
       </div>
@@ -210,18 +219,18 @@ const SideMenu: React.FC<{
       {/* Kullanıcı Bilgileri */}
       <div className="p-4 border-b border-blue-800">
         <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white font-bold text-lg shadow-lg">
+          <div className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white font-bold text-lg shadow-xl">
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div className="flex-1">
-            <p className="font-semibold">{user?.name}</p>
-            <p className="text-sm text-blue-300 capitalize">{user?.role}</p>
+            <p className="font-semibold text-white">{user?.name}</p>
+            <p className="text-sm text-orange-300 capitalize">{user?.role}</p>
           </div>
           <button 
             onClick={() => setShowUserSection(!showUserSection)}
             className="p-2 rounded-lg hover:bg-blue-800 transition-colors"
           >
-            <ChevronDown className={`h-4 w-4 transition-transform ${showUserSection ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-blue-300 transition-transform ${showUserSection ? 'rotate-180' : ''}`} />
           </button>
         </div>
       </div>
@@ -232,26 +241,29 @@ const SideMenu: React.FC<{
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-blue-300">Departman:</span>
-              <span className="font-medium">{user?.department}</span>
+              <span className="font-medium text-white">{user?.department}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-blue-300">Email:</span>
-              <span className="font-medium">{user?.email}</span>
+              <span className="font-medium text-white">{user?.email}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-blue-300">Yetkiler:</span>
               <div className="flex flex-wrap gap-1 justify-end">
                 {user?.permissions?.manageMaterials && (
-                  <span className="px-2 py-1 bg-blue-700 text-xs rounded-full">Malzeme</span>
+                  <span className="px-2 py-1 bg-blue-700 text-blue-100 text-xs rounded-full">Malzeme</span>
                 )}
                 {user?.permissions?.managePatients && (
-                  <span className="px-2 py-1 bg-green-700 text-xs rounded-full">Hasta</span>
+                  <span className="px-2 py-1 bg-green-700 text-green-100 text-xs rounded-full">Hasta</span>
                 )}
                 {user?.permissions?.manageInvoices && (
-                  <span className="px-2 py-1 bg-purple-700 text-xs rounded-full">Fatura</span>
+                  <span className="px-2 py-1 bg-purple-700 text-purple-100 text-xs rounded-full">Fatura</span>
                 )}
                 {user?.permissions?.viewReports && (
-                  <span className="px-2 py-1 bg-orange-700 text-xs rounded-full">Rapor</span>
+                  <span className="px-2 py-1 bg-orange-700 text-orange-100 text-xs rounded-full">Rapor</span>
+                )}
+                {user?.permissions?.manageUsers && (
+                  <span className="px-2 py-1 bg-red-700 text-red-100 text-xs rounded-full">Kullanıcı</span>
                 )}
               </div>
             </div>
@@ -266,13 +278,13 @@ const SideMenu: React.FC<{
             <button
               key={item.id}
               onClick={() => onPageChange(item.id)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 font-medium rounded-lg transition-all ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 font-medium rounded-lg transition-all duration-300 ${
                 currentPage === item.id
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
-                  : 'text-blue-200 hover:text-white hover:bg-blue-800'
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-xl border-l-4 border-orange-400'
+                  : 'text-blue-100 hover:text-white hover:bg-blue-800'
               }`}
             >
-              <div className={`${currentPage === item.id ? 'text-white' : 'text-blue-300'}`}>
+              <div className={`${currentPage === item.id ? 'text-white' : 'text-orange-300'}`}>
                 {item.icon}
               </div>
               <span>{item.label}</span>
@@ -281,43 +293,20 @@ const SideMenu: React.FC<{
         </div>
       </div>
 
-      {/* Aktif Oturumlar */}
-      <div className="p-4 border-t border-blue-800">
-        <h3 className="font-semibold text-blue-300 mb-3 flex items-center">
-          <UserCheck className="h-4 w-4 mr-2" />
-          Aktif Oturumlar ({activeSessions.length})
-        </h3>
-        <div className="space-y-2 max-h-40 overflow-y-auto">
-          {activeSessions.map((session) => (
-            <div key={session.id} className="bg-blue-900/50 rounded-lg p-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{session.createdBy}</p>
-                  <p className="text-xs text-blue-300">{session.sessionNo}</p>
-                </div>
-                <button className="p-1 hover:bg-blue-800 rounded">
-                  <Power className="h-3 w-3 text-red-400" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Son Aktiviteler - Sadece Admin için */}
       {user?.permissions?.manageUsers && (
         <div className="p-4 border-t border-blue-800">
-          <h3 className="font-semibold text-blue-300 mb-3 flex items-center">
+          <h3 className="font-semibold text-orange-400 mb-3 flex items-center">
             <Clock className="h-4 w-4 mr-2" />
             Son Aktiviteler
           </h3>
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {recentActivities.map((log: SystemLog, index) => (
-              <div key={index} className="bg-blue-900/30 rounded-lg p-2">
-                <p className="text-xs font-medium">{log.performedBy}</p>
-                <p className="text-xs text-blue-300 truncate">{log.details}</p>
+              <div key={index} className="bg-blue-900/20 rounded-lg p-2">
+                <p className="text-xs font-medium text-white">{log.performedBy}</p>
+                <p className="text-xs text-blue-200 truncate">{log.details}</p>
                 <p className="text-xs text-blue-400 text-right">
-                  {new Date(log.performedAt || '').toLocaleTimeString('tr-TR')}
+                  {log.performedAt ? new Date(log.performedAt).toLocaleTimeString('tr-TR') : ''}
                 </p>
               </div>
             ))}
@@ -400,7 +389,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
     const expiredMaterials = dataService.getExpiredMaterials();
     const expiringSoonMaterials = dataService.getExpiringSoonMaterials(7);
     const recentSessions = dataService.getStockCountSessions()
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
       .slice(0, 5);
 
     const newNotifications: Notification[] = [];
@@ -451,7 +440,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
         type: 'info',
         title: '📋 Yeni Sayım Oturumu',
         message: `${session.sessionNo} - ${session.invoiceNo} oturumu oluşturuldu`,
-        time: new Date(session.createdAt).toLocaleDateString('tr-TR'),
+        time: session.createdAt ? new Date(session.createdAt).toLocaleDateString('tr-TR') : '',
         read: false,
         link: 'stock-count'
       });
@@ -490,9 +479,9 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 to-blue-900 flex">
-      {/* Sabit Sol Menü - Desktop - ARKA PLAN BOŞLUĞU DÜZELTMESİ */}
-      <div className="hidden lg:flex lg:w-80 xl:w-96 flex-shrink-0 sticky top-0 h-screen z-50">
+    <div className="min-h-screen bg-white text-gray-900 flex">
+      {/* Sabit Sol Menü - Desktop */}
+      <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 sticky top-0 h-screen z-50">
         <SideMenu 
           currentPage={currentPage}
           onPageChange={onPageChange}
@@ -500,10 +489,10 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
         />
       </div>
 
-      {/* Ana İçerik Alanı - ARKA PLAN BOŞLUĞU DÜZELTMESİ */}
+      {/* Ana İçerik Alanı */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Modern Header */}
-        <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white shadow-lg sticky top-0 z-40">
+        <header className="bg-gradient-to-r from-[#0F1B5D] to-[#1E3A8A] text-white shadow-lg sticky top-0 z-40 border-b border-blue-800">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
               {/* Sol Taraf: Logo ve Menü Toggle (Mobil) */}
@@ -518,22 +507,24 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                 
                 <div className="flex items-center space-x-3 lg:hidden">
                   <div className="relative">
-                    <Hospital className="h-8 w-8 text-orange-400" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
+                      <Hospital className="h-6 w-6 text-white" />
+                    </div>
                     {hasCriticalStock && (
                       <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></div>
                     )}
                   </div>
                   <div>
-                    <h1 className="text-lg font-bold">Osmangazi Göz</h1>
-                    <p className="text-blue-200 text-xs">Stok Takip Sistemi</p>
+                    <h1 className="text-lg font-bold text-white">Osmangazi Göz</h1>
+                    <p className="text-orange-400 text-xs">Stok Takip Sistemi</p>
                   </div>
                 </div>
               </div>
               
               {/* Orta: Sayfa Başlığı */}
               <div className="hidden lg:flex flex-1 justify-center">
-                <div className="bg-blue-800/50 backdrop-blur-sm px-6 py-2 rounded-full">
-                  <h2 className="text-lg font-semibold text-center">
+                <div className="bg-blue-800/50 backdrop-blur-sm px-6 py-2 rounded-full border border-blue-700/50">
+                  <h2 className="text-lg font-semibold text-white text-center">
                     {currentPage === 'dashboard' && 'Ana Sayfa'}
                     {currentPage === 'materials' && 'Malzeme Yönetimi'}
                     {currentPage === 'stock-count' && 'Stok Takip'}
@@ -549,7 +540,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
               <div className="flex items-center space-x-4">
                 {/* Mobil Sayfa Başlığı */}
                 <div className="lg:hidden text-center">
-                  <h2 className="text-sm font-semibold">
+                  <h2 className="text-sm font-semibold text-white">
                     {currentPage === 'dashboard' && 'Ana Sayfa'}
                     {currentPage === 'materials' && 'Malzeme'}
                     {currentPage === 'stock-count' && 'Stok'}
@@ -567,13 +558,13 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                       setShowNotifications(!showNotifications);
                       setShowUserMenu(false);
                     }}
-                    className="relative p-2 rounded-full bg-blue-800 hover:bg-blue-700 transition-colors shadow-md"
+                    className="relative p-2 rounded-full bg-blue-800 hover:bg-blue-700 transition-colors shadow-lg"
                     title="Bildirimler"
                     aria-label="Bildirimler"
                   >
-                    <Bell className="h-6 w-6" />
+                    <Bell className="h-6 w-6 text-blue-200" />
                     {unreadNotifications > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-xs font-bold">
+                      <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
                         {unreadNotifications > 9 ? '9+' : unreadNotifications}
                       </span>
                     )}
@@ -581,21 +572,21 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                   
                   {/* Bildirimler Paneli */}
                   {showNotifications && (
-                    <div className="fixed lg:absolute right-4 top-20 lg:top-full lg:mt-2 w-96 max-w-[90vw] bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-blue-200/30 py-2 z-50">
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-blue-100">
-                        <h3 className="font-bold text-lg text-blue-900">Bildirimler</h3>
+                    <div className="fixed lg:absolute right-4 top-20 lg:top-full lg:mt-2 w-96 max-w-[90vw] bg-white backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 py-2 z-50">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                        <h3 className="font-bold text-lg text-gray-900">Bildirimler</h3>
                         <div className="flex items-center space-x-2">
                           {unreadNotifications > 0 && (
                             <button
                               onClick={markAllNotificationsAsRead}
-                              className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+                              className="text-sm text-orange-600 hover:text-orange-700 font-medium"
                             >
                               Tümünü okundu işaretle
                             </button>
                           )}
                           <button
                             onClick={() => setShowNotifications(false)}
-                            className="text-blue-500 hover:text-blue-700"
+                            className="text-gray-400 hover:text-orange-600"
                             aria-label="Bildirimleri kapat"
                           >
                             <X className="h-4 w-4" />
@@ -614,20 +605,20 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                           ))
                         ) : (
                           <div className="px-4 py-8 text-center">
-                            <Bell className="h-12 w-12 text-blue-300 mx-auto mb-3" />
-                            <p className="text-blue-500">Bildirim bulunmuyor</p>
-                            <p className="text-sm text-blue-400 mt-1">Tüm işlemleriniz güncel</p>
+                            <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-500">Bildirim bulunmuyor</p>
+                            <p className="text-sm text-gray-400 mt-1">Tüm işlemleriniz güncel</p>
                           </div>
                         )}
                       </div>
                       
-                      <div className="px-4 py-3 border-t border-blue-100">
+                      <div className="px-4 py-3 border-t border-gray-200">
                         <button
                           onClick={() => {
                             setShowNotifications(false);
                             onPageChange('reports');
                           }}
-                          className="w-full text-center font-medium text-blue-600 hover:text-blue-800 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                          className="w-full text-center font-medium text-orange-600 hover:text-orange-700 py-2 rounded-lg hover:bg-gray-50 transition-colors"
                         >
                           Tüm bildirimleri görüntüle →
                         </button>
@@ -643,25 +634,25 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                       setShowUserMenu(!showUserMenu);
                       setShowNotifications(false);
                     }}
-                    className="flex items-center space-x-3 px-4 py-2 rounded-xl bg-blue-800 hover:bg-blue-700 transition-colors shadow-md"
+                    className="flex items-center space-x-3 px-4 py-2 rounded-xl bg-blue-800 hover:bg-blue-700 transition-colors shadow-lg"
                     aria-label="Kullanıcı menüsü"
                   >
-                    <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white font-bold shadow-sm">
+                    <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white font-bold shadow-lg">
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div className="text-left hidden lg:block">
-                      <p className="text-sm font-semibold">{user?.name}</p>
-                      <p className="text-xs text-blue-200 capitalize">{user?.role}</p>
+                      <p className="text-sm font-semibold text-white">{user?.name}</p>
+                      <p className="text-xs text-orange-300 capitalize">{user?.role}</p>
                     </div>
                   </button>
                   
                   {showUserMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-blue-200/30 py-2 z-50">
-                      <div className="px-4 py-3 border-b border-blue-100">
-                        <p className="font-semibold text-blue-900">{user?.name}</p>
-                        <p className="text-sm text-blue-600">{user?.email}</p>
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 py-2 z-50">
+                      <div className="px-4 py-3 border-b border-gray-200">
+                        <p className="font-semibold text-gray-900">{user?.name}</p>
+                        <p className="text-sm text-gray-600">{user?.email}</p>
                         <div className="mt-2 flex items-center space-x-2">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full capitalize">
+                          <span className="px-2 py-1 bg-gray-100 text-orange-600 text-xs rounded-full capitalize">
                             {user?.department}
                           </span>
                           <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full capitalize">
@@ -675,9 +666,9 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                             setShowUserMenu(false);
                             onPageChange('dashboard');
                           }}
-                          className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition-colors flex items-center space-x-3"
+                          className="w-full px-4 py-2 text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors flex items-center space-x-3"
                         >
-                          <Home className="h-4 w-4" />
+                          <Home className="h-4 w-4 text-gray-500" />
                           <span>Ana Sayfa</span>
                         </button>
                         <button
@@ -685,15 +676,15 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                             setShowUserMenu(false);
                             // Profil sayfası eklenecek
                           }}
-                          className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 transition-colors flex items-center space-x-3"
+                          className="w-full px-4 py-2 text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors flex items-center space-x-3"
                         >
-                          <User className="h-4 w-4" />
+                          <User className="h-4 w-4 text-gray-500" />
                           <span>Profilim</span>
                         </button>
-                        <div className="border-t border-gray-100 my-2"></div>
+                        <div className="border-t border-gray-200 my-2"></div>
                         <button
                           onClick={onLogout}
-                          className="w-full px-4 py-2 text-left font-medium text-red-600 hover:bg-red-50/80 transition-colors flex items-center space-x-3 hover:text-red-700"
+                          className="w-full px-4 py-2 text-left font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors flex items-center space-x-3"
                         >
                           <LogOut className="h-4 w-4" />
                           <span>Çıkış Yap</span>
@@ -714,7 +705,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setShowMobileMenu(false)}
             />
-            <div className="absolute left-0 top-0 h-full w-80 bg-gradient-to-b from-blue-950 to-blue-900 text-white shadow-2xl">
+            <div className="absolute left-0 top-0 h-full w-80 bg-gradient-to-b from-[#0F1B5D] to-[#1E3A8A] text-white shadow-2xl">
               <SideMenu 
                 currentPage={currentPage}
                 onPageChange={(page) => {
@@ -727,51 +718,53 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
           </div>
         )}
 
-        {/* Ana İçerik - ARKA PLAN BOŞLUĞU DÜZELTMESİ */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6 bg-gradient-to-br from-blue-950 to-blue-900">
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/40 p-4 lg:p-6 min-h-[calc(100vh-12rem)]">
+        {/* Ana İçerik */}
+        <main className="flex-1 overflow-x-auto p-0">
+          <div className="bg-white min-h-[calc(100vh-12rem)] p-4 lg:p-6">
             {children}
           </div>
         </main>
 
-        {/* Footer - ARKA PLAN BOŞLUĞU DÜZELTMESİ */}
-        <footer className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6">
+        {/* Footer */}
+        <footer className="bg-gradient-to-r from-[#0F1B5D] to-[#1E3A8A] text-white p-4 border-t border-blue-800">
           <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="mb-4 md:mb-0">
-              <h3 className="text-lg font-bold flex items-center">
+            <div className="mb-3 md:mb-0">
+              <h3 className="text-base font-bold flex items-center text-white">
                 <div className="relative mr-2">
-                  <Hospital className="h-5 w-5 text-orange-400" />
+                  <div className="w-5 h-5 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                    <Hospital className="h-3 w-3 text-white" />
+                  </div>
                   {hasCriticalStock && (
-                    <div className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <div className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 bg-red-500 rounded-full animate-pulse"></div>
                   )}
                 </div>
                 Osmangazi Göz Hastanesi
               </h3>
-              <p className="text-blue-200 text-sm">Stok Takip Sistemi v3.0</p>
-              <div className="mt-2 flex items-center space-x-2">
-                <span className="px-2 py-1 bg-blue-700/50 text-xs rounded-full">
+              <p className="text-orange-400 text-xs">Stok Takip Sistemi v3.0</p>
+              <div className="mt-1 flex items-center space-x-2">
+                <span className="px-2 py-0.5 bg-blue-800/50 text-orange-300 text-xs rounded-full">
                   Kullanıcı: {user?.name}
                 </span>
-                <span className="px-2 py-1 bg-orange-500/50 text-xs rounded-full capitalize">
+                <span className="px-2 py-0.5 bg-orange-900/50 text-orange-300 text-xs rounded-full capitalize">
                   Rol: {user?.role}
                 </span>
               </div>
             </div>
             
             <div className="text-center md:text-right">
-              <p className="font-medium">© {new Date().getFullYear()} Osmangazi Göz. Tüm Hakları Saklıdır</p>
-              <div className="flex flex-wrap justify-center md:justify-end gap-3 mt-2">
-                <div className="flex items-center space-x-2">
-                  <Package className="h-4 w-4 text-orange-400" />
-                  <span className="text-sm">Malzeme: <span className="font-bold">{dashboardStats.totalMaterials}</span></span>
+              <p className="text-sm font-medium text-blue-300">© {new Date().getFullYear()} Osmangazi Göz. Tüm Hakları Saklıdır</p>
+              <div className="flex flex-wrap justify-center md:justify-end gap-2 mt-1">
+                <div className="flex items-center space-x-1">
+                  <Package className="h-3 w-3 text-orange-400" />
+                  <span className="text-xs text-blue-300">Malzeme: <span className="font-bold text-white">{dashboardStats.totalMaterials}</span></span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle className="h-4 w-4 text-red-400" />
-                  <span className="text-sm">Kritik: <span className="font-bold">{dashboardStats.criticalStockCount}</span></span>
+                <div className="flex items-center space-x-1">
+                  <AlertTriangle className="h-3 w-3 text-red-400" />
+                  <span className="text-xs text-blue-300">Kritik: <span className="font-bold text-white">{dashboardStats.criticalStockCount}</span></span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Search className="h-4 w-4 text-green-400" />
-                  <span className="text-sm">Değer: <span className="font-bold">₺{dashboardStats.totalStockValue.toLocaleString('tr-TR')}</span></span>
+                <div className="flex items-center space-x-1">
+                  <Search className="h-3 w-3 text-green-400" />
+                  <span className="text-xs text-blue-300">Değer: <span className="font-bold text-white">₺{dashboardStats.totalStockValue.toLocaleString('tr-TR')}</span></span>
                 </div>
               </div>
             </div>
@@ -782,7 +775,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
       {/* Genel Overlay'ler */}
       {(showNotifications || showUserMenu) && (
         <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => {
             setShowNotifications(false);
             setShowUserMenu(false);

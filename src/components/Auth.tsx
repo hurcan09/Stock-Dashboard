@@ -1,6 +1,4 @@
-// src/components/Auth.tsx - TAM GÜNCELLENMİŞ VERSİYON
-// Auth.tsx dosyasının en üstüne şu import'u ekleyin:
-import { useLocalStorage } from '../hooks/useLocalStorage';
+// src/components/Auth.tsx - TAMAMEN GÜNCELLENMİŞ VERSİYON (Koyu Tema)
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LogIn, LogOut, User, UserPlus, Lock, Mail, 
@@ -12,10 +10,10 @@ import {
   Activity,
   UserCheck,
   Power,
-  ChevronDown
+  ChevronDown,
+  Eye as Hospital
 } from 'lucide-react';
 import { dataService } from '../utils/dataService';
-
 import { User as UserType } from '../types';
 
 // Giriş form verisi
@@ -52,6 +50,11 @@ interface ProfileFormData {
   department: string;
 }
 
+// Auth Props Interface
+interface AuthProps {
+  onLogin: (user: UserType) => void;
+}
+
 // NavItem Component
 const NavItem: React.FC<{ 
   icon: React.ReactNode; 
@@ -62,16 +65,16 @@ const NavItem: React.FC<{
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${
+      className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-300 ${
         active 
-          ? 'bg-orange-50 text-orange-600' 
-          : 'text-blue-900 hover:bg-blue-50'
+          ? 'bg-orange-500/20 text-white border-l-4 border-orange-500' 
+          : 'text-gray-300 hover:text-white hover:bg-slate-800'
       }`}
     >
-      <div className={`mr-3 ${active ? 'text-orange-600' : 'text-blue-700'}`}>
+      <div className={`mr-3 ${active ? 'text-orange-400' : 'text-gray-400'}`}>
         {icon}
       </div>
-      <span className="font-medium">{label}</span>
+      <span className="font-medium text-base">{label}</span>
     </button>
   );
 };
@@ -101,44 +104,44 @@ const LoginForm: React.FC<{
   onRegisterClick
 }) => {
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-200/30 p-8">
+    <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-8 w-full max-w-md">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-900 to-blue-800 rounded-full mb-4 shadow-lg">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full mb-4 shadow-2xl">
           <div className="relative">
-            <Shield className="h-10 w-10 text-white" />
-            <div className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full"></div>
+            <Hospital className="h-10 w-10 text-white" />
+            <div className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full"></div>
           </div>
         </div>
-        <h1 className="text-3xl font-bold text-blue-900 mb-2">
+        <h1 className="text-3xl font-bold text-white mb-2">
           Osmangazi Göz
         </h1>
-        <p className="text-blue-700 font-medium">Stok Takip Sistemi</p>
+        <p className="text-orange-400 font-medium text-base">Stok Takip Sistemi v3.0</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50/90 backdrop-blur-sm border border-red-200/50 rounded-xl flex items-center shadow-sm">
-          <XCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
-          <p className="text-red-700 font-medium">{error}</p>
+        <div className="mb-6 p-4 bg-red-900/50 backdrop-blur-sm border border-red-700/50 rounded-xl flex items-center shadow-lg">
+          <XCircle className="h-5 w-5 text-red-400 mr-3 flex-shrink-0" />
+          <p className="text-red-200 font-medium text-sm">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="mb-6 p-4 bg-green-50/90 backdrop-blur-sm border border-green-200/50 rounded-xl flex items-center shadow-sm">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-          <p className="text-green-700 font-medium">{success}</p>
+        <div className="mb-6 p-4 bg-green-900/50 backdrop-blur-sm border border-green-700/50 rounded-xl flex items-center shadow-lg">
+          <CheckCircle className="h-5 w-5 text-green-400 mr-3 flex-shrink-0" />
+          <p className="text-green-200 font-medium text-sm">{success}</p>
         </div>
       )}
 
       <form onSubmit={onSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-blue-900 mb-2">
-            <Mail className="h-4 w-4 inline mr-1" />
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            <Mail className="h-4 w-4 inline mr-1 text-orange-400" />
             Email Adresi
           </label>
           <input
             type="email"
             required
-            className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+            className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
             placeholder="ornek@osmangazigoz.com"
             value={formData.email}
             onChange={(e) => onFormChange({ ...formData, email: e.target.value })}
@@ -146,22 +149,22 @@ const LoginForm: React.FC<{
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-blue-900 mb-2">
-            <Lock className="h-4 w-4 inline mr-1" />
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            <Lock className="h-4 w-4 inline mr-1 text-orange-400" />
             Şifre
           </label>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
               required
-              className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 pr-12"
+              className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 pr-12 text-white placeholder:text-gray-500"
               placeholder="••••••••"
               value={formData.password}
               onChange={(e) => onFormChange({ ...formData, password: e.target.value })}
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-orange-600 transition-colors"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-orange-400 transition-colors"
               onClick={onShowPasswordToggle}
             >
               {showPassword ? (
@@ -178,17 +181,17 @@ const LoginForm: React.FC<{
             <input
               type="checkbox"
               id="remember"
-              className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-blue-300 rounded"
+              className="h-4 w-4 text-orange-500 focus:ring-orange-600 border-slate-600 rounded bg-slate-800"
               checked={formData.rememberMe}
               onChange={(e) => onFormChange({ ...formData, rememberMe: e.target.checked })}
             />
-            <label htmlFor="remember" className="ml-2 text-sm text-blue-700">
+            <label htmlFor="remember" className="ml-2 text-sm text-gray-300">
               Beni hatırla
             </label>
           </div>
           <button
             type="button"
-            className="text-sm text-orange-600 hover:text-orange-800 font-medium transition-colors"
+            className="text-sm text-orange-400 hover:text-orange-300 font-medium transition-colors"
             onClick={onForgotPassword}
           >
             Şifremi unuttum
@@ -198,7 +201,7 @@ const LoginForm: React.FC<{
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl"
+          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-xl hover:shadow-2xl"
         >
           {loading ? (
             <>
@@ -214,13 +217,13 @@ const LoginForm: React.FC<{
         </button>
       </form>
 
-      <div className="mt-8 pt-8 border-t border-blue-200/50">
-        <p className="text-center text-blue-700 mb-4">
+      <div className="mt-8 pt-8 border-t border-slate-700/50">
+        <p className="text-center text-gray-300 mb-4 text-base">
           Hesabınız yok mu?
         </p>
         <button
           type="button"
-          className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 py-3.5 px-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow"
+          className="w-full border-2 border-orange-500 text-orange-400 hover:bg-orange-500/10 hover:border-orange-400 py-3.5 px-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl"
           onClick={onRegisterClick}
         >
           <UserPlus className="h-5 w-5 mr-3" />
@@ -229,17 +232,17 @@ const LoginForm: React.FC<{
       </div>
 
       <div className="mt-8 text-center">
-        <p className="text-sm text-blue-600 font-medium">
+        <p className="text-sm text-orange-400 font-medium">
           Demo Giriş Bilgileri:
         </p>
         <div className="mt-3 space-y-2">
-          <div className="text-xs bg-blue-50/50 text-blue-800 p-2 rounded-lg">
+          <div className="text-xs bg-slate-800/50 text-orange-300 p-2 rounded-lg border border-slate-700">
             <span className="font-semibold">Admin:</span> admin@osmangazigoz.com / 123456
           </div>
-          <div className="text-xs bg-blue-50/50 text-blue-800 p-2 rounded-lg">
+          <div className="text-xs bg-slate-800/50 text-orange-300 p-2 rounded-lg border border-slate-700">
             <span className="font-semibold">Doktor:</span> doktor@osmangazigoz.com / 123456
           </div>
-          <div className="text-xs bg-blue-50/50 text-blue-800 p-2 rounded-lg">
+          <div className="text-xs bg-slate-800/50 text-orange-300 p-2 rounded-lg border border-slate-700">
             <span className="font-semibold">Personel:</span> personel@osmangazigoz.com / 123456
           </div>
         </div>
@@ -259,55 +262,55 @@ const RegisterForm: React.FC<{
   onCancel: () => void;
 }> = ({ formData, loading, error, success, onFormChange, onSubmit, onCancel }) => {
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-200/30 p-8">
+    <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-8 w-full max-w-2xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-blue-900 flex items-center">
-            <UserPlus className="h-6 w-6 mr-3 text-orange-600" />
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            <UserPlus className="h-6 w-6 mr-3 text-orange-400" />
             Yeni Hesap Oluştur
           </h2>
-          <p className="text-blue-700 text-sm mt-1">Osmangazi Göz Stok Takip Sistemi</p>
+          <p className="text-orange-400 text-sm mt-1">Osmangazi Göz Stok Takip Sistemi</p>
         </div>
         <button
           onClick={onCancel}
-          className="text-blue-400 hover:text-orange-600 transition-colors p-2 hover:bg-blue-50 rounded-xl"
+          className="text-gray-400 hover:text-orange-400 transition-colors p-2 hover:bg-slate-800 rounded-xl"
         >
           <X className="h-6 w-6" />
         </button>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50/90 backdrop-blur-sm border border-red-200/50 rounded-xl shadow-sm">
-          <p className="text-red-700 font-medium">{error}</p>
+        <div className="mb-6 p-4 bg-red-900/50 backdrop-blur-sm border border-red-700/50 rounded-xl shadow-lg">
+          <p className="text-red-200 font-medium text-sm">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="mb-6 p-4 bg-green-50/90 backdrop-blur-sm border border-green-200/50 rounded-xl shadow-sm">
-          <p className="text-green-700 font-medium">{success}</p>
+        <div className="mb-6 p-4 bg-green-900/50 backdrop-blur-sm border border-green-700/50 rounded-xl shadow-lg">
+          <p className="text-green-200 font-medium text-sm">{success}</p>
         </div>
       )}
 
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Ad Soyad *
             </label>
             <input
               type="text"
               required
-              className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+              className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
               value={formData.name}
               onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Rol *
             </label>
             <select
-              className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+              className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white"
               value={formData.role}
               onChange={(e) => onFormChange({ ...formData, role: e.target.value as UserType['role'] })}
             >
@@ -321,13 +324,13 @@ const RegisterForm: React.FC<{
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-blue-900 mb-2">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
             Email Adresi *
           </label>
           <input
             type="email"
             required
-            className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+            className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
             value={formData.email}
             onChange={(e) => onFormChange({ ...formData, email: e.target.value })}
           />
@@ -335,23 +338,23 @@ const RegisterForm: React.FC<{
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Telefon
             </label>
             <input
               type="tel"
-              className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+              className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
               value={formData.phone}
               onChange={(e) => onFormChange({ ...formData, phone: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Departman
             </label>
             <input
               type="text"
-              className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+              className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
               value={formData.department}
               onChange={(e) => onFormChange({ ...formData, department: e.target.value })}
             />
@@ -360,25 +363,25 @@ const RegisterForm: React.FC<{
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Şifre *
             </label>
             <input
               type="password"
               required
-              className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+              className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
               value={formData.password}
               onChange={(e) => onFormChange({ ...formData, password: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Şifre Tekrar *
             </label>
             <input
               type="password"
               required
-              className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+              className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
               value={formData.confirmPassword}
               onChange={(e) => onFormChange({ ...formData, confirmPassword: e.target.value })}
             />
@@ -389,14 +392,14 @@ const RegisterForm: React.FC<{
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 shadow-lg hover:shadow-xl"
+            className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 shadow-xl hover:shadow-2xl"
           >
             {loading ? 'Kaydediliyor...' : 'Kaydol'}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 py-3.5 px-4 rounded-xl font-medium transition-all duration-300 shadow-sm hover:shadow"
+            className="flex-1 border-2 border-orange-500 text-orange-400 hover:bg-orange-500/10 hover:border-orange-400 py-3.5 px-4 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             İptal
           </button>
@@ -418,50 +421,50 @@ const ResetPasswordForm: React.FC<{
   onCancel: () => void;
 }> = ({ formData, loading, error, success, verificationStep, onFormChange, onSubmit, onCancel }) => {
   return (
-    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-200/30 p-8">
+    <div className="bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-8 w-full max-w-md">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-blue-900 flex items-center">
-            <Lock className="h-6 w-6 mr-3 text-orange-600" />
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            <Lock className="h-6 w-6 mr-3 text-orange-400" />
             Şifre Sıfırlama
           </h2>
-          <p className="text-blue-700 text-sm mt-1">Osmangazi Göz Stok Takip Sistemi</p>
+          <p className="text-orange-400 text-sm mt-1">Osmangazi Göz Stok Takip Sistemi</p>
         </div>
         <button
           onClick={onCancel}
-          className="text-blue-400 hover:text-orange-600 transition-colors p-2 hover:bg-blue-50 rounded-xl"
+          className="text-gray-400 hover:text-orange-400 transition-colors p-2 hover:bg-slate-800 rounded-xl"
         >
           <X className="h-6 w-6" />
         </button>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50/90 backdrop-blur-sm border border-red-200/50 rounded-xl shadow-sm">
-          <p className="text-red-700 font-medium">{error}</p>
+        <div className="mb-6 p-4 bg-red-900/50 backdrop-blur-sm border border-red-700/50 rounded-xl shadow-lg">
+          <p className="text-red-200 font-medium text-sm">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="mb-6 p-4 bg-green-50/90 backdrop-blur-sm border border-green-200/50 rounded-xl shadow-sm">
-          <p className="text-green-700 font-medium">{success}</p>
+        <div className="mb-6 p-4 bg-green-900/50 backdrop-blur-sm border border-green-700/50 rounded-xl shadow-lg">
+          <p className="text-green-200 font-medium text-sm">{success}</p>
         </div>
       )}
 
       <form onSubmit={onSubmit} className="space-y-6">
         {verificationStep === 1 && (
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">
-              <Mail className="h-4 w-4 inline mr-1" />
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              <Mail className="h-4 w-4 inline mr-1 text-orange-400" />
               Email Adresiniz
             </label>
             <input
               type="email"
               required
-              className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+              className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
               value={formData.email}
               onChange={(e) => onFormChange({ ...formData, email: e.target.value })}
             />
-            <p className="mt-3 text-sm text-blue-600 bg-blue-50/50 p-3 rounded-lg">
+            <p className="mt-3 text-sm text-orange-400 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
               Şifre sıfırlama bağlantısı email adresinize gönderilecektir.
             </p>
           </div>
@@ -469,19 +472,19 @@ const ResetPasswordForm: React.FC<{
 
         {verificationStep === 2 && (
           <div>
-            <label className="block text-sm font-medium text-blue-900 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Doğrulama Kodu
             </label>
             <input
               type="text"
               required
-              className="w-full px-4 py-4 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-center text-2xl tracking-widest font-bold text-blue-900"
+              className="w-full px-4 py-4 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-center text-2xl tracking-widest font-bold text-white"
               value={formData.verificationCode}
               onChange={(e) => onFormChange({ ...formData, verificationCode: e.target.value })}
               placeholder="000000"
               maxLength={6}
             />
-            <p className="mt-3 text-sm text-blue-600 bg-blue-50/50 p-3 rounded-lg">
+            <p className="mt-3 text-sm text-orange-400 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
               Email adresinize gönderilen 6 haneli kodu girin.
             </p>
           </div>
@@ -490,27 +493,27 @@ const ResetPasswordForm: React.FC<{
         {verificationStep === 3 && (
           <>
             <div>
-              <label className="block text-sm font-medium text-blue-900 mb-2">
-                <Lock className="h-4 w-4 inline mr-1" />
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Lock className="h-4 w-4 inline mr-1 text-orange-400" />
                 Yeni Şifre
               </label>
               <input
                 type="password"
                 required
-                className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+                className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
                 value={formData.newPassword}
                 onChange={(e) => onFormChange({ ...formData, newPassword: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-blue-900 mb-2">
-                <Lock className="h-4 w-4 inline mr-1" />
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Lock className="h-4 w-4 inline mr-1 text-orange-400" />
                 Yeni Şifre (Tekrar)
               </label>
               <input
                 type="password"
                 required
-                className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+                className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
                 value={formData.confirmPassword}
                 onChange={(e) => onFormChange({ ...formData, confirmPassword: e.target.value })}
               />
@@ -521,7 +524,7 @@ const ResetPasswordForm: React.FC<{
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 shadow-lg hover:shadow-xl"
+          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 shadow-xl hover:shadow-2xl"
         >
           {loading ? 'İşleniyor...' : 
            verificationStep === 1 ? 'Kodu Gönder' :
@@ -532,7 +535,7 @@ const ResetPasswordForm: React.FC<{
         <button
           type="button"
           onClick={onCancel}
-          className="w-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 py-3.5 px-4 rounded-xl font-medium transition-all duration-300 shadow-sm hover:shadow"
+          className="w-full border-2 border-orange-500 text-orange-400 hover:bg-orange-500/10 hover:border-orange-400 py-3.5 px-4 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
         >
           Giriş Ekranına Dön
         </button>
@@ -556,58 +559,58 @@ const ProfileModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-200/30 p-8 w-full max-w-2xl">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-8 w-full max-w-2xl">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-blue-900 flex items-center">
-              <User className="h-6 w-6 mr-3 text-orange-600" />
+            <h2 className="text-2xl font-bold text-white flex items-center">
+              <User className="h-6 w-6 mr-3 text-orange-400" />
               Profil Bilgilerim
             </h2>
-            <p className="text-blue-700 text-sm mt-1">Osmangazi Göz Stok Takip Sistemi</p>
+            <p className="text-orange-400 text-sm mt-1">Osmangazi Göz Stok Takip Sistemi</p>
           </div>
           <button
             onClick={onClose}
-            className="text-blue-400 hover:text-orange-600 transition-colors p-2 hover:bg-blue-50 rounded-xl"
+            className="text-gray-400 hover:text-orange-400 transition-colors p-2 hover:bg-slate-800 rounded-xl"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50/90 backdrop-blur-sm border border-red-200/50 rounded-xl shadow-sm">
-            <p className="text-red-700 font-medium">{error}</p>
+          <div className="mb-6 p-4 bg-red-900/50 backdrop-blur-sm border border-red-700/50 rounded-xl shadow-lg">
+            <p className="text-red-200 font-medium text-sm">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-green-50/90 backdrop-blur-sm border border-green-200/50 rounded-xl shadow-sm">
-            <p className="text-green-700 font-medium">{success}</p>
+          <div className="mb-6 p-4 bg-green-900/50 backdrop-blur-sm border border-green-700/50 rounded-xl shadow-lg">
+            <p className="text-green-200 font-medium text-sm">{success}</p>
           </div>
         )}
 
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-blue-900 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Ad Soyad
               </label>
               <input
                 type="text"
                 required
-                className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+                className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
                 value={formData.name}
                 onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-blue-900 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Email
               </label>
               <input
                 type="email"
                 required
-                className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+                className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
                 value={formData.email}
                 onChange={(e) => onFormChange({ ...formData, email: e.target.value })}
               />
@@ -616,68 +619,68 @@ const ProfileModal: React.FC<{
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-blue-900 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Telefon
               </label>
               <input
                 type="tel"
-                className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+                className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
                 value={formData.phone}
                 onChange={(e) => onFormChange({ ...formData, phone: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-blue-900 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Departman
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+                className="w-full px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
                 value={formData.department}
                 onChange={(e) => onFormChange({ ...formData, department: e.target.value })}
               />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100/50 p-6 rounded-xl border border-blue-200/50">
-            <h3 className="font-semibold text-blue-900 mb-4 flex items-center">
-              <Shield className="h-5 w-5 mr-2 text-orange-600" />
+          <div className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 p-6 rounded-xl border border-slate-700/50">
+            <h3 className="font-semibold text-white mb-4 flex items-center text-base">
+              <Shield className="h-5 w-5 mr-2 text-orange-400" />
               Hesap Bilgileri
             </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-blue-700 font-medium">Rol:</span>
-                <span className="ml-2 px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full capitalize">
+                <span className="text-gray-300 font-medium">Rol:</span>
+                <span className="ml-2 px-3 py-1 bg-slate-800 text-orange-300 text-xs font-semibold rounded-full capitalize">
                   {currentUser?.role}
                 </span>
               </div>
               <div>
-                <span className="text-blue-700 font-medium">Durum:</span>
+                <span className="text-gray-300 font-medium">Durum:</span>
                 <span className={`ml-2 px-3 py-1 text-xs font-semibold rounded-full ${
                   currentUser?.isActive 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
+                    ? 'bg-green-900/50 text-green-300' 
+                    : 'bg-red-900/50 text-red-300'
                 }`}>
                   {currentUser?.isActive ? 'Aktif' : 'Pasif'}
                 </span>
               </div>
               <div className="col-span-2">
-                <span className="text-blue-700 font-medium">Yetkiler:</span>
+                <span className="text-gray-300 font-medium">Yetkiler:</span>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {currentUser?.permissions?.manageMaterials && (
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">Malzeme</span>
+                    <span className="px-2 py-1 bg-blue-900/50 text-blue-300 text-xs rounded-full font-medium">Malzeme</span>
                   )}
                   {currentUser?.permissions?.managePatients && (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">Hasta</span>
+                    <span className="px-2 py-1 bg-green-900/50 text-green-300 text-xs rounded-full font-medium">Hasta</span>
                   )}
                   {currentUser?.permissions?.manageInvoices && (
-                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">Fatura</span>
+                    <span className="px-2 py-1 bg-purple-900/50 text-purple-300 text-xs rounded-full font-medium">Fatura</span>
                   )}
                   {currentUser?.permissions?.viewReports && (
-                    <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">Rapor</span>
+                    <span className="px-2 py-1 bg-orange-900/50 text-orange-300 text-xs rounded-full font-medium">Rapor</span>
                   )}
                   {currentUser?.permissions?.manageUsers && (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full font-medium">Kullanıcı</span>
+                    <span className="px-2 py-1 bg-red-900/50 text-red-300 text-xs rounded-full font-medium">Kullanıcı</span>
                   )}
                 </div>
               </div>
@@ -688,14 +691,14 @@ const ProfileModal: React.FC<{
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 shadow-lg hover:shadow-xl"
+              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 shadow-xl hover:shadow-2xl"
             >
               {loading ? 'Güncelleniyor...' : 'Bilgileri Güncelle'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:border-blue-700 py-3.5 px-4 rounded-xl font-medium transition-all duration-300 shadow-sm hover:shadow"
+              className="flex-1 border-2 border-orange-500 text-orange-400 hover:bg-orange-500/10 hover:border-orange-400 py-3.5 px-4 rounded-xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               İptal
             </button>
@@ -744,12 +747,12 @@ const UserManagementModal: React.FC<{
 
   const getRoleColor = (role: UserType['role']) => {
     switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800';
-      case 'manager': return 'bg-blue-100 text-blue-800';
-      case 'doctor': return 'bg-green-100 text-green-800';
-      case 'staff': return 'bg-purple-100 text-purple-800';
-      case 'viewer': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'admin': return 'bg-red-900/50 text-red-300';
+      case 'manager': return 'bg-blue-900/50 text-blue-300';
+      case 'doctor': return 'bg-green-900/50 text-green-300';
+      case 'staff': return 'bg-purple-900/50 text-purple-300';
+      case 'viewer': return 'bg-gray-900/50 text-gray-300';
+      default: return 'bg-gray-900/50 text-gray-300';
     }
   };
 
@@ -776,55 +779,55 @@ const UserManagementModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-200/30 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-blue-200/30 p-8">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 p-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-blue-900 flex items-center">
-                <Users className="h-6 w-6 mr-3 text-orange-600" />
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <Users className="h-6 w-6 mr-3 text-orange-400" />
                 Kullanıcı Yönetimi
               </h2>
-              <p className="text-blue-700 text-sm mt-1">
+              <p className="text-orange-400 text-sm mt-1">
                 Osmangazi Göz - Kullanıcı yetkilerini yönetin
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-blue-400 hover:text-orange-600 transition-colors p-2 hover:bg-blue-50 rounded-xl"
+              className="text-gray-400 hover:text-orange-400 transition-colors p-2 hover:bg-slate-800 rounded-xl"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50/90 backdrop-blur-sm border border-red-200/50 rounded-xl shadow-sm">
-              <p className="text-red-700 font-medium">{error}</p>
+            <div className="mb-6 p-4 bg-red-900/50 backdrop-blur-sm border border-red-700/50 rounded-xl shadow-lg">
+              <p className="text-red-200 font-medium text-sm">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mb-6 p-4 bg-green-50/90 backdrop-blur-sm border border-green-200/50 rounded-xl shadow-sm">
-              <p className="text-green-700 font-medium">{success}</p>
+            <div className="mb-6 p-4 bg-green-900/50 backdrop-blur-sm border border-green-700/50 rounded-xl shadow-lg">
+              <p className="text-green-200 font-medium text-sm">{success}</p>
             </div>
           )}
 
           {/* Arama ve Filtre */}
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 h-5 w-5" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-400 h-5 w-5" />
               <input
                 type="text"
                 placeholder="Kullanıcı ara..."
-                className="w-full pl-12 pr-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white placeholder:text-gray-500"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-blue-400" />
+              <Filter className="h-5 w-5 text-orange-400" />
               <select
-                className="px-4 py-3.5 bg-white/80 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300"
+                className="px-4 py-3.5 bg-slate-800/80 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm transition-all duration-300 text-white"
                 value={filterRole}
                 onChange={(e) => onFilterChange(e.target.value)}
               >
@@ -838,7 +841,7 @@ const UserManagementModal: React.FC<{
             </div>
             <button
               onClick={onRegisterClick}
-              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3.5 rounded-xl font-semibold transition-all duration-300 flex items-center shadow-lg hover:shadow-xl"
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3.5 rounded-xl font-semibold transition-all duration-300 flex items-center shadow-xl hover:shadow-2xl"
             >
               <UserPlus className="h-5 w-5 mr-3" />
               Yeni Kullanıcı
@@ -848,31 +851,31 @@ const UserManagementModal: React.FC<{
 
         {/* Kullanıcı Listesi */}
         <div className="p-8">
-          <div className="overflow-x-auto rounded-xl border border-blue-200/50">
+          <div className="overflow-x-auto rounded-xl border border-slate-700/50">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-blue-50 to-blue-100/50">
+              <thead className="bg-gradient-to-r from-slate-800/50 to-slate-900/50">
                 <tr>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-blue-900">Kullanıcı</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-blue-900">Rol</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-blue-900">Departman</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-blue-900">Durum</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-blue-900">Son Giriş</th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-blue-900">İşlemler</th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-white">Kullanıcı</th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-white">Rol</th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-white">Departman</th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-white">Durum</th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-white">Son Giriş</th>
+                  <th className="py-4 px-6 text-left text-sm font-semibold text-white">İşlemler</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-blue-100/50">
+              <tbody className="divide-y divide-slate-700/50">
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-blue-50/30 transition-colors">
+                  <tr key={user.id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="py-4 px-6">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mr-4 shadow-sm">
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mr-4 shadow-lg">
                           <span className="text-white font-bold text-sm">
                             {user.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <p className="font-semibold text-blue-900">{user.name}</p>
-                          <p className="text-sm text-blue-600">{user.email}</p>
+                          <p className="font-semibold text-white">{user.name}</p>
+                          <p className="text-sm text-gray-300">{user.email}</p>
                         </div>
                       </div>
                     </td>
@@ -882,14 +885,14 @@ const UserManagementModal: React.FC<{
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="text-blue-800 bg-blue-50 px-3 py-1 rounded-full text-sm font-medium">
+                      <span className="text-orange-300 bg-orange-900/20 px-3 py-1 rounded-full text-sm font-medium">
                         {user.department || 'Belirtilmemiş'}
                       </span>
                     </td>
                     <td className="py-4 px-6">
                       <button
                         onClick={() => onToggleUserStatus(user.id)}
-                        className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 shadow-sm hover:shadow ${
+                        className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 shadow-lg hover:shadow-xl ${
                           user.isActive
                             ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700'
                             : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
@@ -910,11 +913,11 @@ const UserManagementModal: React.FC<{
                     </td>
                     <td className="py-4 px-6">
                       <div className="text-sm">
-                        <div className="text-blue-900 font-medium">
+                        <div className="text-white font-medium">
                           {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('tr-TR') : 'Hiç giriş yapmadı'}
                         </div>
                         {user.lastLogin && (
-                          <div className="text-xs text-blue-600">
+                          <div className="text-xs text-gray-400">
                             {new Date(user.lastLogin).toLocaleTimeString('tr-TR')}
                           </div>
                         )}
@@ -924,14 +927,14 @@ const UserManagementModal: React.FC<{
                       <div className="flex space-x-2">
                         <button
                           onClick={() => onEditUser(user)}
-                          className="p-2 text-blue-600 hover:text-orange-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-orange-400 hover:text-orange-300 hover:bg-slate-800 rounded-lg transition-colors"
                           title="Düzenle"
                         >
                           <User className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => onToggleUserStatus(user.id)}
-                          className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                          className="p-2 text-green-400 hover:text-green-300 hover:bg-slate-800 rounded-lg transition-colors"
                           title="Durumu Değiştir"
                         >
                           <Power className="h-4 w-4" />
@@ -939,7 +942,7 @@ const UserManagementModal: React.FC<{
                         {user.id !== currentUser?.id && (
                           <button
                             onClick={() => onDeleteUser(user.id)}
-                            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 text-red-400 hover:text-red-300 hover:bg-slate-800 rounded-lg transition-colors"
                             title="Sil"
                           >
                             <X className="h-4 w-4" />
@@ -955,17 +958,17 @@ const UserManagementModal: React.FC<{
 
           {filteredUsers.length === 0 && (
             <div className="text-center py-12">
-              <Users className="h-16 w-16 text-blue-300 mx-auto mb-4" />
-              <p className="text-blue-700 font-medium">Kullanıcı bulunamadı</p>
-              <p className="text-blue-600 text-sm mt-1">Arama kriterlerinize uygun kullanıcı bulunamadı</p>
+              <Users className="h-16 w-16 text-slate-700 mx-auto mb-4" />
+              <p className="text-gray-400 font-medium">Kullanıcı bulunamadı</p>
+              <p className="text-gray-500 text-sm mt-1">Arama kriterlerinize uygun kullanıcı bulunamadı</p>
             </div>
           )}
 
           <div className="mt-6 flex items-center justify-between">
-            <div className="text-sm text-blue-700">
-              Toplam <span className="font-bold">{filteredUsers.length}</span> kullanıcı bulundu
+            <div className="text-sm text-gray-300">
+              Toplam <span className="font-bold text-white">{filteredUsers.length}</span> kullanıcı bulundu
             </div>
-            <div className="text-xs text-blue-600 bg-blue-50/50 px-3 py-1.5 rounded-full">
+            <div className="text-xs text-orange-400 bg-orange-900/20 px-3 py-1.5 rounded-full">
               Yöneticiler tüm kullanıcıları görebilir ve yönetebilir
             </div>
           </div>
@@ -976,7 +979,7 @@ const UserManagementModal: React.FC<{
 };
 
 // Main Auth Component
-export default function Auth() {
+export default function Auth({ onLogin }: AuthProps) {
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showLogin, setShowLogin] = useState(true);
@@ -1041,7 +1044,7 @@ export default function Auth() {
 
   const checkAuthStatus = () => {
     const user = dataService.getCurrentUser();
-    if (user && user.id !== '1') {
+    if (user && user.id !== 'guest-1') {
       setCurrentUser(user);
       setIsAuthenticated(true);
     }
@@ -1121,7 +1124,8 @@ export default function Auth() {
       setTimeout(() => {
         setSuccess('');
         setShowLogin(false);
-        window.location.reload();
+        // Login callback'ini çağır
+        onLogin(user);
       }, 2000);
 
     } catch (err: any) {
@@ -1426,12 +1430,12 @@ export default function Auth() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-950 to-blue-900 flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
         {/* Arkaplan dekorasyonları */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-800 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-700 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-slate-800 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-900/30 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-slate-800 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
         </div>
 
         <div className="relative w-full max-w-md z-10">
@@ -1489,10 +1493,10 @@ export default function Auth() {
           )}
 
           <div className="mt-8 text-center">
-            <p className="text-sm text-blue-300">
+            <p className="text-sm text-orange-400">
               Osmangazi Göz Hastanesi Stok Takip Sistemi v3.0
             </p>
-            <p className="text-xs text-blue-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               © {new Date().getFullYear()} Tüm hakları saklıdır.
             </p>
           </div>
@@ -1528,7 +1532,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Profile Modal */}
       <ProfileModal
         isOpen={showProfile}
@@ -1566,31 +1570,31 @@ export default function Auth() {
 
       {/* Hoşgeldin Ekranı */}
       <div className="p-8">
-        <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-2xl p-8 text-white shadow-xl">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-8 text-white shadow-2xl border border-slate-700/50">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center mb-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mr-4 shadow-lg">
+                <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mr-4 shadow-2xl">
                   <span className="text-white font-bold text-xl">
                     {currentUser?.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold">Hoşgeldin, {currentUser?.name}!</h1>
-                  <p className="text-blue-200 mt-1">
+                  <h1 className="text-3xl font-bold text-white">Hoşgeldin, {currentUser?.name}!</h1>
+                  <p className="text-orange-300 mt-1">
                     {currentUser?.role === 'admin' && 'Sistem Yöneticisi'}
                     {currentUser?.role === 'manager' && 'Yönetici'}
                     {currentUser?.role === 'doctor' && 'Doktor'}
                     {currentUser?.role === 'staff' && 'Personel'}
                     {currentUser?.role === 'viewer' && 'Gözlemci'}
-                    <span className="mx-2">•</span>
-                    {currentUser?.department}
+                    <span className="mx-2 text-slate-400">•</span>
+                    <span className="text-slate-300">{currentUser?.department}</span>
                   </p>
                 </div>
               </div>
               
               <div className="mt-6">
-                <p className="text-lg text-blue-100">
+                <p className="text-lg text-slate-200">
                   Osmangazi Göz sistemine giriş yaptınız.
                   {currentUser?.role === 'admin' && ' Yönetici panelinden sistemi yönetebilirsiniz.'}
                   {currentUser?.role === 'manager' && ' Stok işlemlerini yönetebilirsiniz.'}
@@ -1603,7 +1607,7 @@ export default function Auth() {
               <div className="mt-8 flex items-center space-x-6">
                 <button
                   onClick={() => setShowProfile(true)}
-                  className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center backdrop-blur-sm"
+                  className="bg-slate-800/50 hover:bg-slate-700/50 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center backdrop-blur-sm border border-slate-700"
                 >
                   <User className="h-5 w-5 mr-2" />
                   Profilim
@@ -1612,7 +1616,7 @@ export default function Auth() {
                 {hasPermission('manageUsers') && (
                   <button
                     onClick={() => setShowUserManagement(true)}
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center shadow-lg hover:shadow-xl"
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center shadow-2xl hover:shadow-3xl"
                   >
                     <Users className="h-5 w-5 mr-2" />
                     Kullanıcı Yönetimi
@@ -1621,7 +1625,7 @@ export default function Auth() {
 
                 <button
                   onClick={handleLogout}
-                  className="bg-red-500/20 hover:bg-red-500/30 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center backdrop-blur-sm"
+                  className="bg-red-900/30 hover:bg-red-800/40 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center backdrop-blur-sm border border-red-800/30"
                 >
                   <LogOut className="h-5 w-5 mr-2" />
                   Çıkış Yap
@@ -1630,8 +1634,8 @@ export default function Auth() {
             </div>
             
             <div className="hidden lg:block ml-8">
-              <div className="w-32 h-32 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/20">
-                <Activity className="h-16 w-16 text-white/80" />
+              <div className="w-32 h-32 bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-slate-700">
+                <Hospital className="h-16 w-16 text-orange-400/80" />
               </div>
             </div>
           </div>
@@ -1641,13 +1645,13 @@ export default function Auth() {
         {hasPermission('manageUsers') && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             {/* Aktif Oturumlar */}
-            <div className="bg-white rounded-2xl shadow-lg border border-blue-200/30 p-6">
+            <div className="bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-700/50 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-blue-900 flex items-center">
-                  <UserCheck className="h-5 w-5 mr-2 text-orange-600" />
+                <h3 className="text-lg font-bold text-white flex items-center">
+                  <UserCheck className="h-5 w-5 mr-2 text-orange-400" />
                   Aktif Oturumlar
                 </h3>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                <span className="px-3 py-1 bg-orange-900/30 text-orange-300 text-sm font-medium rounded-full border border-orange-700/50">
                   {dataService.getUserSessions().filter(s => s.isActive).length} aktif
                 </span>
               </div>
@@ -1657,13 +1661,13 @@ export default function Auth() {
                   .filter(session => session.isActive)
                   .slice(0, 5)
                   .map((session) => (
-                    <div key={session.id} className="bg-blue-50/50 rounded-xl p-4 border border-blue-200/30">
+                    <div key={session.id} className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-blue-900">{session.userName}</p>
-                          <p className="text-sm text-blue-600 mt-1">
+                          <p className="font-medium text-white">{session.userName}</p>
+                          <p className="text-sm text-slate-300 mt-1">
                             <span className="capitalize">{session.userRole}</span>
-                            <span className="mx-2">•</span>
+                            <span className="mx-2 text-slate-500">•</span>
                             {session.deviceInfo?.browser}
                           </p>
                         </div>
@@ -1674,15 +1678,15 @@ export default function Auth() {
                               loadUsers();
                             }
                           }}
-                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
                           title="Oturumu Sonlandır"
                         >
                           <Power className="h-4 w-4" />
                         </button>
                       </div>
-                      <div className="mt-3 text-xs text-blue-500">
+                      <div className="mt-3 text-xs text-slate-400">
                         <span>IP: {session.ipAddress}</span>
-                        <span className="mx-2">•</span>
+                        <span className="mx-2 text-slate-600">•</span>
                         <span>{new Date(session.loginTime).toLocaleTimeString('tr-TR')}</span>
                       </div>
                     </div>
@@ -1691,13 +1695,13 @@ export default function Auth() {
             </div>
 
             {/* Son Aktiviteler */}
-            <div className="bg-white rounded-2xl shadow-lg border border-blue-200/30 p-6">
+            <div className="bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-700/50 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-blue-900 flex items-center">
-                  <Activity className="h-5 w-5 mr-2 text-orange-600" />
+                <h3 className="text-lg font-bold text-white flex items-center">
+                  <Activity className="h-5 w-5 mr-2 text-orange-400" />
                   Son Aktiviteler
                 </h3>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                <span className="px-3 py-1 bg-slate-800 text-slate-300 text-sm font-medium rounded-full border border-slate-700">
                   Son 10 aktivite
                 </span>
               </div>
@@ -1706,22 +1710,22 @@ export default function Auth() {
                 {dataService.getLogs()
                   .slice(0, 10)
                   .map((log, index) => (
-                    <div key={index} className="border-b border-blue-100/50 pb-4 last:border-0 last:pb-0">
+                    <div key={index} className="border-b border-slate-700/50 pb-4 last:border-0 last:pb-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="font-medium text-blue-900">{log.performedBy}</p>
-                          <p className="text-sm text-blue-700 mt-1">{log.details}</p>
+                          <p className="font-medium text-white">{log.performedBy}</p>
+                          <p className="text-sm text-slate-300 mt-1">{log.details}</p>
                         </div>
                         <div className="text-right ml-4">
                           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            log.action.includes('CREATE') ? 'bg-green-100 text-green-800' :
-                            log.action.includes('UPDATE') ? 'bg-blue-100 text-blue-800' :
-                            log.action.includes('DELETE') ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
+                            log.action.includes('CREATE') ? 'bg-green-900/50 text-green-300' :
+                            log.action.includes('UPDATE') ? 'bg-blue-900/50 text-blue-300' :
+                            log.action.includes('DELETE') ? 'bg-red-900/50 text-red-300' :
+                            'bg-slate-800 text-slate-300'
                           }`}>
                             {log.action}
                           </span>
-                          <p className="text-xs text-blue-500 mt-1">
+                          <p className="text-xs text-slate-400 mt-1">
                             {new Date(log.performedAt || '').toLocaleTimeString('tr-TR')}
                           </p>
                         </div>
@@ -1735,18 +1739,18 @@ export default function Auth() {
 
         {/* Hızlı Başlangıç Butonları */}
         <div className="mt-8">
-          <h3 className="text-lg font-bold text-blue-900 mb-4">Hızlı Başlangıç</h3>
+          <h3 className="text-lg font-bold text-white mb-4">Hızlı Başlangıç</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border border-blue-200 text-blue-900 px-6 py-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow">
-              <Package className="h-5 w-5 mr-2" />
+            <button className="bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border border-slate-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-2xl">
+              <Package className="h-5 w-5 mr-2 text-orange-400" />
               Malzeme Yönetimi
             </button>
-            <button className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border border-blue-200 text-blue-900 px-6 py-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow">
-              <ClipboardList className="h-5 w-5 mr-2" />
+            <button className="bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border border-slate-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-2xl">
+              <ClipboardList className="h-5 w-5 mr-2 text-orange-400" />
               Stok Sayımı
             </button>
-            <button className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border border-blue-200 text-blue-900 px-6 py-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow">
-              <Users className="h-5 w-5 mr-2" />
+            <button className="bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-700 hover:to-slate-800 border border-slate-700 text-white px-6 py-4 rounded-xl font-medium transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-2xl">
+              <Users className="h-5 w-5 mr-2 text-orange-400" />
               Hasta Yönetimi
             </button>
           </div>

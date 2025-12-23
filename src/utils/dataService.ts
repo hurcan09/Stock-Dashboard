@@ -544,21 +544,6 @@ class DataService {
         return defaultValue;
       };
 
-      // DEBUG: localStorage'dan gelen verileri kontrol et
-      console.log('LocalStorage yükleniyor...');
-      
-      // ÖNEMLİ: Tüm anahtar değerlerini kontrol et
-      const localStorageKeys = [
-        'materials', 'categories', 'subCategories', 'suppliers',
-        'patients', 'patientMaterialUsage', 'invoices', 
-        'stockCounts', 'stockCountSessions', 'logs'
-      ];
-      
-      localStorageKeys.forEach(key => {
-        const value = localStorage.getItem(key);
-        console.log(`${key}:`, value ? JSON.parse(value).length : 'BOŞ');
-      });
-
       this.materials = loadData('materials', createDefaultMaterials());
       this.categories = loadData('categories', createDefaultCategories());
       this.subCategories = loadData('subCategories', createDefaultSubCategories());
@@ -612,6 +597,156 @@ class DataService {
     } catch (error) {
       console.error('LocalStorage kaydetme hatası:', error);
     }
+  }
+
+  // === PDF YÜKLEME FONKSİYONLARI ===
+  async uploadInvoicePdf(invoiceId: string, file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const pdfData = e.target?.result as string;
+          if (pdfData) {
+            // Base64 olarak kaydet
+            const base64Data = pdfData.split(',')[1];
+            localStorage.setItem(`invoice-pdf-${invoiceId}`, base64Data);
+            
+            // Invoice'ı güncelle - pdfUrl ekle
+            const invoiceIndex = this.invoices.findIndex(inv => inv.id === invoiceId);
+            if (invoiceIndex !== -1) {
+              // Base64 veriyi data URL'ye çevir
+              const pdfUrl = `data:application/pdf;base64,${base64Data}`;
+              this.invoices[invoiceIndex] = {
+                ...this.invoices[invoiceIndex],
+                pdfUrl: pdfUrl
+              };
+              this.saveToLocalStorage();
+            }
+
+            resolve(pdfData);
+            
+            this.logAction({
+              action: 'PDF_YUKLENDI',
+              module: 'INVOICE',
+              recordId: invoiceId,
+              details: `Fatura PDF'i yüklendi: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`,
+              performedBy: this.getCurrentUser().name
+            });
+          } else {
+            reject(new Error('PDF dosyası okunamadı'));
+          }
+        };
+        
+        reader.onerror = (error) => {
+          reject(new Error(`PDF okuma hatası: ${error}`));
+        };
+        
+        reader.readAsDataURL(file);
+      } catch (error) {
+        reject(new Error(`PDF yükleme hatası: ${error}`));
+      }
+    });
+  }
+
+  // PDF indirme fonksiyonu
+  downloadInvoicePdf(invoiceId: string): void {
+    const base64Data = localStorage.getItem(`invoice-pdf-${invoiceId}`);
+    if (base64Data) {
+      const invoice = this.invoices.find(inv => inv.id === invoiceId);
+      const pdfUrl = `data:application/pdf;base64,${base64Data}`;
+      
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = `Fatura_${invoice?.invoiceNo || invoiceId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+
+  getInvoicePdfUrl(invoiceId: string): string | null {
+    const base64Data = localStorage.getItem(`invoice-pdf-${invoiceId}`);
+    if (base64Data) {
+      return `data:application/pdf;base64,${base64Data}`;
+    }
+    return null;
+  }
+
+  hasInvoicePdf(invoiceId: string): boolean {
+    return localStorage.getItem(`invoice-pdf-${invoiceId}`) !== null;
+  }
+
+  deleteInvoicePdf(invoiceId: string): boolean {
+    const pdfKey = `invoice-pdf-${invoiceId}`;
+    if (localStorage.getItem(pdfKey)) {
+      localStorage.removeItem(pdfKey);
+      
+      // Invoice'dan pdfUrl'yi kaldır
+      const invoiceIndex = this.invoices.findIndex(inv => inv.id === invoiceId);
+      if (invoiceIndex !== -1) {
+        const updatedInvoice = { ...this.invoices[invoiceIndex] };
+        delete updatedInvoice.pdfUrl;
+        this.invoices[invoiceIndex] = updatedInvoice;
+        this.saveToLocalStorage();
+      }
+      
+      this.logAction({
+        action: 'PDF_SILINDI',
+        module: 'INVOICE',
+        recordId: invoiceId,
+        details: 'Fatura PDF\'i silindi',
+        performedBy: this.getCurrentUser().name
+      });
+      
+      return true;
+    }
+    return false;
+  }
+
+  // SESSION PDF YÖNETİMİ
+  async uploadSessionPdf(sessionId: string, file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const pdfData = e.target?.result as string;
+          if (pdfData) {
+            const base64Data = pdfData.split(',')[1];
+            localStorage.setItem(`session-pdf-${sessionId}`, base64Data);
+            resolve(pdfData);
+          } else {
+            reject(new Error('PDF dosyası okunamadı'));
+          }
+        };
+        reader.onerror = (error) => {
+          reject(new Error(`PDF okuma hatası: ${error}`));
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        reject(new Error(`PDF yükleme hatası: ${error}`));
+      }
+    });
+  }
+
+  getSessionPdfUrl(sessionId: string): string | null {
+    const base64Data = localStorage.getItem(`session-pdf-${sessionId}`);
+    if (base64Data) {
+      return `data:application/pdf;base64,${base64Data}`;
+    }
+    return null;
+  }
+
+  hasSessionPdf(sessionId: string): boolean {
+    return localStorage.getItem(`session-pdf-${sessionId}`) !== null;
+  }
+
+  deleteSessionPdf(sessionId: string): boolean {
+    const pdfKey = `session-pdf-${sessionId}`;
+    if (localStorage.getItem(pdfKey)) {
+      localStorage.removeItem(pdfKey);
+      return true;
+    }
+    return false;
   }
 
   // === SİSTEM LOGLARI ===
@@ -2760,88 +2895,6 @@ class DataService {
         createdBy: session.createdBy
       };
     }).sort((a, b) => new Date(b.countDate).getTime() - new Date(a.countDate).getTime());
-  }
-
-  // === PDF YÖNETİMİ ===
-  saveInvoicePdf(invoiceId: string, file: File): void {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const pdfData = e.target?.result;
-      if (pdfData) {
-        localStorage.setItem(`invoice-pdf-${invoiceId}`, pdfData as string);
-        
-        this.logAction({
-          action: 'UPLOAD',
-          module: 'INVOICE',
-          recordId: invoiceId,
-          details: `Fatura PDF'i yüklendi: ${file.name}`,
-          performedBy: this.getCurrentUser().name
-        });
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  saveSessionPdf(sessionId: string, file: File): void {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const pdfData = e.target?.result;
-      if (pdfData) {
-        localStorage.setItem(`session-pdf-${sessionId}`, pdfData as string);
-        
-        this.logAction({
-          action: 'UPLOAD',
-          module: 'STOCK_SESSION',
-          recordId: sessionId,
-          details: `Sayım oturumu PDF'i yüklendi: ${file.name}`,
-          performedBy: this.getCurrentUser().name
-        });
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  getInvoicePdfUrl(invoiceId: string): string | null {
-    return localStorage.getItem(`invoice-pdf-${invoiceId}`);
-  }
-
-  getSessionPdfUrl(sessionId: string): string | null {
-    return localStorage.getItem(`session-pdf-${sessionId}`);
-  }
-
-  deleteInvoicePdf(invoiceId: string): boolean {
-    const pdfKey = `invoice-pdf-${invoiceId}`;
-    if (localStorage.getItem(pdfKey)) {
-      localStorage.removeItem(pdfKey);
-      
-      this.logAction({
-        action: 'DELETE',
-        module: 'INVOICE',
-        recordId: invoiceId,
-        details: 'Fatura PDF\'i silindi',
-        performedBy: this.getCurrentUser().name
-      });
-      
-      return true;
-    }
-    return false;
-  }
-
-  deleteSessionPdf(sessionId: string): boolean {
-    const pdfKey = `session-pdf-${sessionId}`;
-    if (localStorage.getItem(pdfKey)) {
-      localStorage.removeItem(pdfKey);
-      return true;
-    }
-    return false;
-  }
-
-  hasInvoicePdf(invoiceId: string): boolean {
-    return localStorage.getItem(`invoice-pdf-${invoiceId}`) !== null;
-  }
-
-  hasSessionPdf(sessionId: string): boolean {
-    return localStorage.getItem(`session-pdf-${sessionId}`) !== null;
   }
 
   convertFileToBase64(file: File): Promise<string> {

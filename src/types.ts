@@ -557,6 +557,7 @@ export interface Invoice {
   invoiceDate: string;
   items: InvoiceItem[];
   totalAmount: number;
+  pdfUrl?: string;
   pdfFile?: string;
   pdfFileName?: string;
   fileSize?: number;

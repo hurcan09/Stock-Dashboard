@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Trash2, Edit2, Package, Filter, Download, Barcode, Camera, X, Upload, Eye, Calendar, FileText, ClipboardList, ChevronLeft, ChevronRight, CheckSquare, Square, Check } from 'lucide-react';
+import { 
+  Plus, Search, Trash2, Edit2, Package, Filter, Download, 
+  Barcode, Camera, X, Upload, Eye, Calendar, FileText, 
+  ClipboardList, ChevronLeft, ChevronRight, CheckSquare, 
+  Square, Check, MoveHorizontal, ArrowRight, ExternalLink,
+  MoreVertical, Copy, Printer, QrCode, AlertTriangle,
+  RefreshCw, Save, Star, Shield, Lock, Unlock,
+  BarChart3, TrendingUp, TrendingDown, PackageOpen,
+  Layers, Grid3X3, List, Grid, Menu, MoreHorizontal
+} from 'lucide-react';
 import { Material, Category, Supplier, StockCount, StockCountSession, MaterialStatus } from '../types';
 import { dataService } from '../utils/dataService';
 
@@ -46,93 +55,95 @@ function BarcodeScannerModal({ onScan, onClose }: { onScan: (barcode: string) =>
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white/90 backdrop-blur-md rounded-lg p-6 w-full max-w-md mx-4 border border-white/20">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Barkod/QR Tara</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-md mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Barkod/QR Tara</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
 
-        <div className="text-center mb-6">
-          <div className="bg-gray-100 rounded-lg p-8 mb-4">
-            <div className="relative inline-block">
-              <div className="w-64 h-48 bg-gray-200 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-400">
-                {scanning && videoStream ? (
-                  <video 
-                    ref={video => {
-                      if (video) video.srcObject = videoStream;
-                    }}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : scanning ? (
-                  <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600">Kamera başlatılıyor...</p>
+          <div className="text-center mb-6">
+            <div className="bg-gray-100 rounded-lg p-8 mb-4">
+              <div className="relative inline-block">
+                <div className="w-64 h-48 bg-gray-200 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-400">
+                  {scanning && videoStream ? (
+                    <video 
+                      ref={video => {
+                        if (video) video.srcObject = videoStream;
+                      }}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : scanning ? (
+                    <div className="text-center">
+                      <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                      <p className="text-sm text-gray-600">Kamera başlatılıyor...</p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">Kamera görüntüsü burada görünecek</p>
+                    </div>
+                  )}
+                </div>
+                <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none">
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 text-xs rounded">
+                    Barkodu bu alana getirin
                   </div>
-                ) : (
-                  <div className="text-center">
-                    <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Kamera görüntüsü burada görünecek</p>
-                  </div>
-                )}
-              </div>
-              <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none">
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 text-xs rounded">
-                  Barkodu bu alana getirin
                 </div>
               </div>
             </div>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Barkod veya QR kodu kamera görüş alanının vurgulanan yerine tam olarak yerleştirin.
+            </p>
           </div>
 
-          <p className="text-sm text-gray-600 mb-4">
-            Barkod veya QR kodu kamera görüş alanının vurgulanan yerine tam olarak yerleştirin.
-          </p>
-        </div>
-
-        <div className="border-t pt-4">
-          <form onSubmit={handleManualSubmit} className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Veya barkodu manuel girin:
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={manualBarcode}
-                onChange={(e) => setManualBarcode(e.target.value)}
-                placeholder="Barkod numarasını girin"
-                autoFocus
-              />
-            </div>
-            <div className="flex space-x-2">
-              <button
-                type="button"
-                onClick={scanning ? stopCameraScan : startCameraScan}
-                className="flex-1 bg-blue-600/80 hover:bg-blue-700/80 text-white py-2 px-4 rounded-lg transition-all flex items-center justify-center space-x-2 backdrop-blur-sm border border-white/20"
-              >
-                <Camera className="h-4 w-4" />
-                <span>{scanning ? 'Kamerayı Kapat' : 'Kamerayı Aç'}</span>
-              </button>
-              <button
-                type="submit"
-                disabled={!manualBarcode.trim()}
-                className="flex-1 bg-green-600/80 hover:bg-green-700/80 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg transition-all backdrop-blur-sm border border-white/20"
-              >
-                Tamam
-              </button>
-            </div>
-          </form>
+          <div className="border-t pt-4">
+            <form onSubmit={handleManualSubmit} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Veya barkodu manuel girin:
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={manualBarcode}
+                  onChange={(e) => setManualBarcode(e.target.value)}
+                  placeholder="Barkod numarasını girin"
+                  autoFocus
+                />
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={scanning ? stopCameraScan : startCameraScan}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-all flex items-center justify-center space-x-2"
+                >
+                  <Camera className="h-4 w-4" />
+                  <span>{scanning ? 'Kamerayı Kapat' : 'Kamerayı Aç'}</span>
+                </button>
+                <button
+                  type="submit"
+                  disabled={!manualBarcode.trim()}
+                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg transition-all"
+                >
+                  Tamam
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// Hızlı Düzenleme Modal Component - GÜNCELLENMİŞ (Yatay layout)
+// Hızlı Düzenleme Modal Component
 function QuickEditModal({ material, onSave, onClose }: { material: Material; onSave: (updates: Partial<Material>) => void; onClose: () => void }) {
   const [formData, setFormData] = useState({
     name: material.name,
@@ -207,149 +218,142 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white/90 backdrop-blur-md rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto border border-white/20">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold">Hızlı Düzenle - {material.name}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* İlk Satır */}
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Malzeme Adı *
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Barkod *
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.barcode}
-                onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                GTIN
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.gtin}
-                onChange={(e) => setFormData({ ...formData, gtin: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                SN
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.sn}
-                onChange={(e) => setFormData({ ...formData, sn: e.target.value })}
-              />
-            </div>
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-6xl mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold">Hızlı Düzenle - {material.name}</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
           </div>
 
-          {/* İkinci Satır */}
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                UDI Code
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.udiCode}
-                onChange={(e) => setFormData({ ...formData, udiCode: e.target.value })}
-              />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* İlk Satır */}
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Malzeme Adı *
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Barkod *
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.barcode}
+                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  GTIN
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.gtin}
+                  onChange={(e) => setFormData({ ...formData, gtin: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  SN
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.sn}
+                  onChange={(e) => setFormData({ ...formData, sn: e.target.value })}
+                />
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                All Barcode
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.allBarcode}
-                onChange={(e) => setFormData({ ...formData, allBarcode: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sezgisel Kod
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.intuitiveCode}
-                onChange={(e) => setFormData({ ...formData, intuitiveCode: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Statü
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as MaterialStatus })}
-              >
-                {statusOptions.map(status => (
-                  <option key={status} value={status}>{status.toUpperCase()}</option>
-                ))}
-              </select>
-            </div>
-          </div>
 
-          {/* Üçüncü Satır */}
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kategori
-                <button
-                  type="button"
-                  onClick={() => setNewCategory('')}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-800"
-                >
-                  + Yeni Ekle
-                </button>
-              </label>
-              <div className="flex space-x-2">
+            {/* İkinci Satır */}
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  UDI Code
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.udiCode}
+                  onChange={(e) => setFormData({ ...formData, udiCode: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  All Barcode
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.allBarcode}
+                  onChange={(e) => setFormData({ ...formData, allBarcode: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sezgisel Kod
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.intuitiveCode}
+                  onChange={(e) => setFormData({ ...formData, intuitiveCode: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Statü
+                </label>
                 <select
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as MaterialStatus })}
                 >
-                  <option value="">Kategori seçin</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  {statusOptions.map(status => (
+                    <option key={status} value={status}>{status.toUpperCase()}</option>
                   ))}
                 </select>
               </div>
-              {newCategory === '' && (
+            </div>
+
+            {/* Üçüncü Satır */}
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kategori
+                </label>
+                <div className="flex space-x-2">
+                  <select
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="">Kategori seçin</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="button"
                   onClick={() => setNewCategory('Yeni kategori...')}
@@ -357,70 +361,61 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
                 >
                   + Yeni Kategori Ekle
                 </button>
-              )}
-              {newCategory !== '' && (
-                <div className="mt-2 flex space-x-2">
-                  <input
-                    type="text"
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    placeholder="Yeni kategori adı"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCategory}
-                    className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    Ekle
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewCategory('')}
-                    className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
-                  >
-                    İptal
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Alt Kategori
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.subCategory}
-                onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tedarikçi
-                <button
-                  type="button"
-                  onClick={() => setNewSupplier('')}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-800"
-                >
-                  + Yeni Ekle
-                </button>
-              </label>
-              <div className="flex space-x-2">
-                <select
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                  value={formData.supplier}
-                  onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                >
-                  <option value="">Tedarikçi seçin</option>
-                  {suppliers.map(sup => (
-                    <option key={sup.id} value={sup.name}>{sup.name}</option>
-                  ))}
-                </select>
+                {newCategory !== '' && (
+                  <div className="mt-2 flex space-x-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="Yeni kategori adı"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCategory}
+                      className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                    >
+                      Ekle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewCategory('')}
+                      className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
+                    >
+                      İptal
+                    </button>
+                  </div>
+                )}
               </div>
-              {newSupplier === '' && (
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Alt Kategori
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.subCategory}
+                  onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tedarikçi
+                </label>
+                <div className="flex space-x-2">
+                  <select
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    value={formData.supplier}
+                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                  >
+                    <option value="">Tedarikçi seçin</option>
+                    {suppliers.map(sup => (
+                      <option key={sup.id} value={sup.name}>{sup.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="button"
                   onClick={() => setNewSupplier('Yeni tedarikçi...')}
@@ -428,154 +423,154 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
                 >
                   + Yeni Tedarikçi Ekle
                 </button>
-              )}
-              {newSupplier !== '' && (
-                <div className="mt-2 flex space-x-2">
-                  <input
-                    type="text"
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
-                    value={newSupplier}
-                    onChange={(e) => setNewSupplier(e.target.value)}
-                    placeholder="Yeni tedarikçi adı"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddSupplier}
-                    className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    Ekle
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewSupplier('')}
-                    className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
-                  >
-                    İptal
-                  </button>
-                </div>
-              )}
+                {newSupplier !== '' && (
+                  <div className="mt-2 flex space-x-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                      value={newSupplier}
+                      onChange={(e) => setNewSupplier(e.target.value)}
+                      placeholder="Yeni tedarikçi adı"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSupplier}
+                      className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                    >
+                      Ekle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewSupplier('')}
+                      className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
+                    >
+                      İptal
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Birim
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                >
+                  {units.map(unit => (
+                    <option key={unit} value={unit}>{unit}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Birim
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+
+            {/* Dördüncü Satır */}
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mevcut Stok
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.currentStock}
+                  onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kritik Stok
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.minStock}
+                  onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Birim Fiyat (₺)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.unitPrice}
+                  onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  SKT
+                </label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.expirationDate}
+                  onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Beşinci Satır */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Seri No Durumu
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.serialNoStatus}
+                  onChange={(e) => setFormData({ ...formData, serialNoStatus: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Malzeme Açıklama
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={formData.materialDescription}
+                  onChange={(e) => setFormData({ ...formData, materialDescription: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
               >
-                {units.map(unit => (
-                  <option key={unit} value={unit}>{unit}</option>
-                ))}
-              </select>
+                Kaydet
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all"
+              >
+                İptal
+              </button>
             </div>
-          </div>
-
-          {/* Dördüncü Satır */}
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Mevcut Stok
-              </label>
-              <input
-                type="number"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.currentStock}
-                onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kritik Stok
-              </label>
-              <input
-                type="number"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.minStock}
-                onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Birim Fiyat (₺)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.unitPrice}
-                onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                SKT
-              </label>
-              <input
-                type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.expirationDate}
-                onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
-              />
-            </div>
-          </div>
-
-          {/* Beşinci Satır */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Seri No Durumu
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.serialNoStatus}
-                onChange={(e) => setFormData({ ...formData, serialNoStatus: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Malzeme Açıklama
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.materialDescription}
-                onChange={(e) => setFormData({ ...formData, materialDescription: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="submit"
-              className="flex-1 bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white py-2 px-4 rounded-lg font-medium transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
-            >
-              Kaydet
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-300/80 hover:bg-gray-400/80 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all backdrop-blur-sm border border-white/20"
-            >
-              İptal
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
 
-// Malzeme Detay Modal Component - GÜNCELLENMİŞ (İstatistikler kaldırıldı)
+// Malzeme Detay Modal Component
 function MaterialDetailsModal({ material, onClose }: { material: Material; onClose: () => void }) {
   const [stockCounts, setStockCounts] = useState<StockCount[]>([]);
   const [sessions, setSessions] = useState<StockCountSession[]>([]);
@@ -585,13 +580,11 @@ function MaterialDetailsModal({ material, onClose }: { material: Material; onClo
       const allCounts = dataService.getStockCounts();
       const allSessions = dataService.getStockCountSessions();
       
-      // Bu malzemeye ait tüm sayımları bul
       const materialCounts = allCounts.filter(count => 
         count.barcode === material.barcode ||
         count.materialId === material.id
       );
       
-      // En son sayımları tarihe göre sırala
       const sortedCounts = materialCounts.sort((a, b) => 
         new Date(b.countDate).getTime() - new Date(a.countDate).getTime()
       );
@@ -632,263 +625,261 @@ function MaterialDetailsModal({ material, onClose }: { material: Material; onClo
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white/90 backdrop-blur-md rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto border border-white/20">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-xl font-semibold">Malzeme Detayları</h3>
-            <p className="text-gray-600">Barkod: {material.barcode} | Statü: {getStatusBadge(material.status || 'normal')}</p>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Malzeme Bilgileri */}
-          <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
-                <Package className="h-5 w-5 mr-2" />
-                Temel Bilgiler
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Malzeme Adı:</span>
-                  <div className="mt-1 font-semibold">{material.name}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Barkod:</span>
-                  <div className="mt-1 font-mono">{material.barcode}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">GTIN:</span>
-                  <div className="mt-1 font-mono">{material.gtin || '-'}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">SN:</span>
-                  <div className="mt-1 font-mono">{material.sn || '-'}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">UDI Code:</span>
-                  <div className="mt-1 font-mono">{material.udiCode || '-'}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">All Barcode:</span>
-                  <div className="mt-1 font-mono">{material.allBarcode || '-'}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Kategori:</span>
-                  <div className="mt-1">{material.category}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Alt Kategori:</span>
-                  <div className="mt-1">{material.subCategory || '-'}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Birim:</span>
-                  <div className="mt-1">{material.unit}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Birim Fiyat:</span>
-                  <div className="mt-1">₺{material.unitPrice.toFixed(2)}</div>
-                </div>
-              </div>
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-4xl mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-xl font-semibold">Malzeme Detayları</h3>
+              <p className="text-gray-600">Barkod: {material.barcode} | Statü: {getStatusBadge(material.status || 'normal')}</p>
             </div>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-                <ClipboardList className="h-5 w-5 mr-2" />
-                Stok Bilgileri
-              </h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Mevcut Stok:</span>
-                  <div className={`mt-1 font-semibold ${
-                    material.currentStock === 0 ? 'text-red-600' :
-                    material.currentStock <= material.minStock ? 'text-yellow-600' :
-                    'text-green-600'
-                  }`}>
-                    {material.currentStock} {material.unit}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
+                  <Package className="h-5 w-5 mr-2" />
+                  Temel Bilgiler
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Malzeme Adı:</span>
+                    <div className="mt-1 font-semibold">{material.name}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Barkod:</span>
+                    <div className="mt-1 font-mono">{material.barcode}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">GTIN:</span>
+                    <div className="mt-1 font-mono">{material.gtin || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">SN:</span>
+                    <div className="mt-1 font-mono">{material.sn || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">UDI Code:</span>
+                    <div className="mt-1 font-mono">{material.udiCode || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">All Barcode:</span>
+                    <div className="mt-1 font-mono">{material.allBarcode || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Kategori:</span>
+                    <div className="mt-1">{material.category}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Alt Kategori:</span>
+                    <div className="mt-1">{material.subCategory || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Birim:</span>
+                    <div className="mt-1">{material.unit}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Birim Fiyat:</span>
+                    <div className="mt-1">₺{material.unitPrice.toFixed(2)}</div>
                   </div>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-700">Kritik Stok:</span>
-                  <div className="mt-1">{material.minStock} {material.unit}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Stok Durumu:</span>
-                  <div className="mt-1">{getStockStatusBadge(material)}</div>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Tedarikçi:</span>
-                  <div className="mt-1">{material.supplier || '-'}</div>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-3 flex items-center">
+                  <ClipboardList className="h-5 w-5 mr-2" />
+                  Stok Bilgileri
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Mevcut Stok:</span>
+                    <div className={`mt-1 font-semibold ${
+                      material.currentStock === 0 ? 'text-red-600' :
+                      material.currentStock <= material.minStock ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`}>
+                      {material.currentStock} {material.unit}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Kritik Stok:</span>
+                    <div className="mt-1">{material.minStock} {material.unit}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Stok Durumu:</span>
+                    <div className="mt-1">{getStockStatusBadge(material)}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Tedarikçi:</span>
+                    <div className="mt-1">{material.supplier || '-'}</div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Ek Bilgiler */}
-            {(material.expirationDate || material.serialNoStatus || material.materialDescription) && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-semibold text-yellow-800 mb-3">Ek Bilgiler</h4>
-                <div className="space-y-2 text-sm">
-                  {material.expirationDate && (
-                    <div>
-                      <span className="font-medium text-gray-700">SKT:</span>
-                      <div className="mt-1">{material.expirationDate}</div>
-                    </div>
-                  )}
-                  {material.serialNoStatus && (
-                    <div>
-                      <span className="font-medium text-gray-700">Seri No Durumu:</span>
-                      <div className="mt-1">{material.serialNoStatus}</div>
-                    </div>
-                  )}
-                  {material.materialDescription && (
-                    <div>
-                      <span className="font-medium text-gray-700">Açıklama:</span>
-                      <div className="mt-1">{material.materialDescription}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Sayım Geçmişi - GÜNCELLENMİŞ (Son 5 kayıt gösteriliyor) */}
-          <div className="space-y-6">
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <h4 className="font-semibold text-purple-800 mb-3 flex items-center">
-                <FileText className="h-5 w-5 mr-2" />
-                Son Sayım Geçmişi ({stockCounts.length} kayıt)
-              </h4>
-              
-              {stockCounts.length > 0 ? (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {stockCounts.slice(0, 5).map((count) => {
-                    const session = getSessionByCountId(count.id);
-                    return (
-                      <div key={count.id} className="bg-white rounded-lg p-3 border border-gray-200">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="font-medium text-blue-600">
-                            {session?.invoiceNo || 'Fatura Yok'}
-                          </div>
-                          <div className="flex space-x-2">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              count.status === 'tamamlandı' || count.status === 'onaylandı' ? 'bg-green-100 text-green-800' :
-                              count.status === 'beklemede' ? 'bg-yellow-100 text-yellow-800' :
-                              count.status === 'reddedildi' ? 'bg-red-100 text-red-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {count.status}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(count.countDate).toLocaleDateString('tr-TR')}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                          <div className="flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            <span>Tarih: {new Date(count.countDate).toLocaleDateString('tr-TR')}</span>
-                          </div>
-                          <div>
-                            <span className="font-medium">Miktar:</span> {count.countedQuantity} {material.unit}
-                          </div>
-                          <div>
-                            <span className="font-medium">Sayım Yapan:</span> {count.countedBy}
-                          </div>
-                          <div>
-                            <span className="font-medium">Toplam:</span> ₺{count.totalValue.toFixed(2)}
-                          </div>
-                        </div>
-
-                        {session && (
-                          <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
-                            <div>Oturum No: {session.sessionNo}</div>
-                            <div>Periyot: {new Date(session.startDate).toLocaleDateString('tr-TR')} - {new Date(session.endDate).toLocaleDateString('tr-TR')}</div>
-                          </div>
-                        )}
-
-                        {count.notes && (
-                          <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                            <span className="font-medium">Not:</span> {count.notes}
-                          </div>
-                        )}
+              {(material.expirationDate || material.serialNoStatus || material.materialDescription) && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-yellow-800 mb-3">Ek Bilgiler</h4>
+                  <div className="space-y-2 text-sm">
+                    {material.expirationDate && (
+                      <div>
+                        <span className="font-medium text-gray-700">SKT:</span>
+                        <div className="mt-1">{material.expirationDate}</div>
                       </div>
-                    );
-                  })}
-                  
-                  {stockCounts.length > 5 && (
-                    <div className="text-center pt-2 border-t">
-                      <p className="text-sm text-gray-500">
-                        {stockCounts.length - 5} kayıt daha var...
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                  <p>Bu malzeme için henüz sayım kaydı bulunmuyor.</p>
+                    )}
+                    {material.serialNoStatus && (
+                      <div>
+                        <span className="font-medium text-gray-700">Seri No Durumu:</span>
+                        <div className="mt-1">{material.serialNoStatus}</div>
+                      </div>
+                    )}
+                    {material.materialDescription && (
+                      <div>
+                        <span className="font-medium text-gray-700">Açıklama:</span>
+                        <div className="mt-1">{material.materialDescription}</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Son Fatura Bilgileri */}
-            {stockCounts.length > 0 && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Son Fatura Bilgileri</h4>
-                {(() => {
-                  const lastCount = stockCounts[0];
-                  const session = getSessionByCountId(lastCount.id);
-                  
-                  if (session) {
-                    return (
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="font-medium">Fatura No:</span>
-                          <span className="font-semibold text-blue-600">{session.invoiceNo}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Son Sayım Tarihi:</span>
-                          <span>{new Date(lastCount.countDate).toLocaleDateString('tr-TR')}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Sayım Yapan:</span>
-                          <span>{lastCount.countedBy}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Sayılan Miktar:</span>
-                          <span className="font-semibold">{lastCount.countedQuantity} {material.unit}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-medium">Toplam Değer:</span>
-                          <span className="font-semibold text-green-600">₺{lastCount.totalValue.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  return (
-                    <p className="text-gray-500 text-center py-4">
-                      Bu malzeme için fatura bilgisi bulunmuyor.
-                    </p>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-        </div>
+            <div className="space-y-6">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h4 className="font-semibold text-purple-800 mb-3 flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Son Sayım Geçmişi ({stockCounts.length} kayıt)
+                </h4>
+                
+                {stockCounts.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {stockCounts.slice(0, 5).map((count) => {
+                      const session = getSessionByCountId(count.id);
+                      return (
+                        <div key={count.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="font-medium text-blue-600">
+                              {session?.invoiceNo || 'Fatura Yok'}
+                            </div>
+                            <div className="flex space-x-2">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                count.status === 'tamamlandı' || count.status === 'onaylandı' ? 'bg-green-100 text-green-800' :
+                                count.status === 'beklemede' ? 'bg-yellow-100 text-yellow-800' :
+                                count.status === 'reddedildi' ? 'bg-red-100 text-red-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {count.status}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(count.countDate).toLocaleDateString('tr-TR')}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                            <div className="flex items-center">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              <span>Tarih: {new Date(count.countDate).toLocaleDateString('tr-TR')}</span>
+                            </div>
+                            <div>
+                              <span className="font-medium">Miktar:</span> {count.countedQuantity} {material.unit}
+                            </div>
+                            <div>
+                              <span className="font-medium">Sayım Yapan:</span> {count.countedBy}
+                            </div>
+                            <div>
+                              <span className="font-medium">Toplam:</span> ₺{count.totalValue.toFixed(2)}
+                            </div>
+                          </div>
 
-        <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="bg-gray-300/80 hover:bg-gray-400/80 text-gray-700 py-2 px-6 rounded-lg font-medium transition-all backdrop-blur-sm border border-white/20"
-          >
-            Kapat
-          </button>
+                          {session && (
+                            <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
+                              <div>Oturum No: {session.sessionNo}</div>
+                              <div>Periyot: {new Date(session.startDate).toLocaleDateString('tr-TR')} - {new Date(session.endDate).toLocaleDateString('tr-TR')}</div>
+                            </div>
+                          )}
+
+                          {count.notes && (
+                            <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                              <span className="font-medium">Not:</span> {count.notes}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    
+                    {stockCounts.length > 5 && (
+                      <div className="text-center pt-2 border-t">
+                        <p className="text-sm text-gray-500">
+                          {stockCounts.length - 5} kayıt daha var...
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                    <p>Bu malzeme için henüz sayım kaydı bulunmuyor.</p>
+                  </div>
+                )}
+              </div>
+
+              {stockCounts.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-800 mb-3">Son Fatura Bilgileri</h4>
+                  {(() => {
+                    const lastCount = stockCounts[0];
+                    const session = getSessionByCountId(lastCount.id);
+                    
+                    if (session) {
+                      return (
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Fatura No:</span>
+                            <span className="font-semibold text-blue-600">{session.invoiceNo}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Son Sayım Tarihi:</span>
+                            <span>{new Date(lastCount.countDate).toLocaleDateString('tr-TR')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Sayım Yapan:</span>
+                            <span>{lastCount.countedBy}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Sayılan Miktar:</span>
+                            <span className="font-semibold">{lastCount.countedQuantity} {material.unit}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Toplam Değer:</span>
+                            <span className="font-semibold text-green-600">₺{lastCount.totalValue.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <p className="text-gray-500 text-center py-4">
+                        Bu malzeme için fatura bilgisi bulunmuyor.
+                      </p>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
+            <button
+              onClick={onClose}
+              className="bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-6 rounded-lg font-medium transition-all"
+            >
+              Kapat
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -903,7 +894,6 @@ function ExcelImportModal({ onImport, onClose }: { onImport: (materials: any[]) 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Güncellenmiş CSV şablonu sütunları
   const templateColumns = [
     'Malzeme Adı',
     'Barkod',
@@ -925,7 +915,6 @@ function ExcelImportModal({ onImport, onClose }: { onImport: (materials: any[]) 
   ];
 
   const handleDownloadTemplate = () => {
-    // CSV formatında şablon oluşturma (Excel ile uyumlu)
     const templateData = [
       templateColumns,
       [
@@ -1131,114 +1120,116 @@ function ExcelImportModal({ onImport, onClose }: { onImport: (materials: any[]) 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white/90 backdrop-blur-md rounded-lg p-6 w-full max-w-2xl mx-4 border border-white/20">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Excel/CSV'den Malzeme İçe Aktar</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-800 mb-2">Önemli: CSV Şablon Kullanın</h4>
-            <p className="text-sm text-blue-700 mb-3">
-              Lütfen önce aşağıdaki butondan CSV şablonunu indirin ve bu şablondaki sütunları doldurarak yükleme yapın.
-              <br /><strong>Sadece "Malzeme Adı" alanı zorunludur.</strong>
-            </p>
-            <button
-              onClick={handleDownloadTemplate}
-              className="bg-blue-600/80 hover:bg-blue-700/80 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all backdrop-blur-sm border border-white/20"
-            >
-              <Download className="h-4 w-4" />
-              <span>CSV Şablonunu İndir (.csv)</span>
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-2xl mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Excel/CSV'den Malzeme İçe Aktar</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
             </button>
           </div>
 
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-2">Şablon Sütunları:</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {templateColumns.map((column, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                  <span className={`text-gray-700 ${column === 'Malzeme Adı' ? 'font-bold' : ''}`}>
-                    {column} {column === 'Malzeme Adı' && '(Zorunlu)'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-600 mb-3">
-              Şablonu doldurduktan sonra buradan yükleyin:
-            </p>
-            
-            <div 
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                validationErrors.length > 0 
-                  ? 'border-red-300 bg-red-50' 
-                  : file 
-                  ? 'border-green-300 bg-green-50'
-                  : 'border-gray-300 bg-white/50 hover:border-blue-500'
-              }`}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">
-                {file ? file.name : 'Doldurulmuş CSV dosyasını seçin veya sürükleyin (.csv)'}
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-800 mb-2">Önemli: CSV Şablon Kullanın</h4>
+              <p className="text-sm text-blue-700 mb-3">
+                Lütfen önce aşağıdaki butondan CSV şablonunu indirin ve bu şablondaki sütunları doldurarak yükleme yapın.
+                <br /><strong>Sadece "Malzeme Adı" alanı zorunludur.</strong>
               </p>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept=".csv,.xlsx,.xls"
-                className="hidden"
-              />
+              <button
+                onClick={handleDownloadTemplate}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all"
+              >
+                <Download className="h-4 w-4" />
+                <span>CSV Şablonunu İndir (.csv)</span>
+              </button>
             </div>
 
-            {validationErrors.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-3">
-                <h4 className="font-semibold text-red-800 mb-2">Doğrulama Hataları:</h4>
-                <ul className="text-sm text-red-700 space-y-1">
-                  {validationErrors.map((error, index) => (
-                    <li key={index}>• {error}</li>
-                  ))}
-                </ul>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-800 mb-2">Şablon Sütunları:</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {templateColumns.map((column, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    <span className={`text-gray-700 ${column === 'Malzeme Adı' ? 'font-bold' : ''}`}>
+                      {column} {column === 'Malzeme Adı' && '(Zorunlu)'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-600 mb-3">
+                Şablonu doldurduktan sonra buradan yükleyin:
+              </p>
+              
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                  validationErrors.length > 0 
+                    ? 'border-red-300 bg-red-50' 
+                    : file 
+                    ? 'border-green-300 bg-green-50'
+                    : 'border-gray-300 bg-white hover:border-blue-500'
+                }`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">
+                  {file ? file.name : 'Doldurulmuş CSV dosyasını seçin veya sürükleyin (.csv)'}
+                </p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept=".csv,.xlsx,.xls"
+                  className="hidden"
+                />
+              </div>
+
+              {validationErrors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-3">
+                  <h4 className="font-semibold text-red-800 mb-2">Doğrulama Hataları:</h4>
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {validationErrors.map((error, index) => (
+                      <li key={index}>• {error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {isImporting && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>İçe aktarılıyor...</span>
+                  <span>{importProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${importProgress}%` }}
+                  ></div>
+                </div>
               </div>
             )}
-          </div>
 
-          {isImporting && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>İçe aktarılıyor...</span>
-                <span>{importProgress}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${importProgress}%` }}
-                ></div>
-              </div>
+            <div className="flex space-x-2 pt-4">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg transition-all"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={!file || isImporting || validationErrors.length > 0}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg transition-all"
+              >
+                {isImporting ? 'Aktarılıyor...' : 'İçe Aktar'}
+              </button>
             </div>
-          )}
-
-          <div className="flex space-x-2 pt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 bg-gray-300/80 hover:bg-gray-400/80 text-gray-700 py-2 px-4 rounded-lg transition-all backdrop-blur-sm border border-white/20"
-            >
-              İptal
-            </button>
-            <button
-              onClick={handleImport}
-              disabled={!file || isImporting || validationErrors.length > 0}
-              className="flex-1 bg-blue-600/80 hover:bg-blue-700/80 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg transition-all backdrop-blur-sm border border-white/20"
-            >
-              {isImporting ? 'Aktarılıyor...' : 'İçe Aktar'}
-            </button>
           </div>
         </div>
       </div>
@@ -1267,66 +1258,68 @@ function StatusChangeModal({
   const statusOptions: MaterialStatus[] = ['normal', 'konsinye', 'iade', 'faturalı'];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white/90 backdrop-blur-md rounded-lg p-6 w-full max-w-md mx-4 border border-white/20">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Malzeme Statüsünü Değiştir</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-md mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Malzeme Statüsünü Değiştir</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <p className="text-sm text-gray-600 mb-2">
-              {selectedMaterials.length} malzemenin statüsünü değiştireceksiniz.
-            </p>
-            <div className="max-h-40 overflow-y-auto mb-4">
-              {selectedMaterials.slice(0, 10).map((material, index) => (
-                <div key={material.id} className="flex items-center justify-between py-1 border-b border-gray-100">
-                  <span className="text-sm truncate">{material.name}</span>
-                  <span className="text-xs text-gray-500">{material.barcode}</span>
-                </div>
-              ))}
-              {selectedMaterials.length > 10 && (
-                <div className="text-center text-sm text-gray-500 py-2">
-                  ...ve {selectedMaterials.length - 10} malzeme daha
-                </div>
-              )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-2">
+                {selectedMaterials.length} malzemenin statüsünü değiştireceksiniz.
+              </p>
+              <div className="max-h-40 overflow-y-auto mb-4">
+                {selectedMaterials.slice(0, 10).map((material, index) => (
+                  <div key={material.id} className="flex items-center justify-between py-1 border-b border-gray-100">
+                    <span className="text-sm truncate">{material.name}</span>
+                    <span className="text-xs text-gray-500">{material.barcode}</span>
+                  </div>
+                ))}
+                {selectedMaterials.length > 10 && (
+                  <div className="text-center text-sm text-gray-500 py-2">
+                    ...ve {selectedMaterials.length - 10} malzeme daha
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Yeni Statü *
-            </label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value as MaterialStatus)}
-            >
-              {statusOptions.map(status => (
-                <option key={status} value={status}>{status.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Yeni Statü *
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value as MaterialStatus)}
+              >
+                {statusOptions.map(status => (
+                  <option key={status} value={status}>{status.toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="submit"
-              className="flex-1 bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white py-2 px-4 rounded-lg font-medium transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
-            >
-              Değiştir
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-300/80 hover:bg-gray-400/80 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all backdrop-blur-sm border border-white/20"
-            >
-              İptal
-            </button>
-          </div>
-        </form>
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+              >
+                Değiştir
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -1347,11 +1340,11 @@ export default function MaterialManagement() {
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [quickEditMaterial, setQuickEditMaterial] = useState<Material | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(20);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
   const [showSelectAll, setShowSelectAll] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
@@ -1374,7 +1367,6 @@ export default function MaterialManagement() {
   };
 
   const filteredMaterials = materials.filter(material => {
-    // Arama terimi kontrolü - Tüm alanlarda ara
     const matchesSearch = searchTerm ? 
       material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       material.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1395,13 +1387,15 @@ export default function MaterialManagement() {
     return matchesSearch && matchesCategory && matchesLowStock && matchesStatus;
   });
 
-  // Sayfalama hesaplamaları
   const totalPages = Math.ceil(filteredMaterials.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentMaterials = filteredMaterials.slice(startIndex, startIndex + itemsPerPage);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0;
+    }
   };
 
   const handleAddMaterial = (materialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -1492,12 +1486,6 @@ export default function MaterialManagement() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    if (searchTerm.trim()) {
-      const foundMaterial = materials.find(m => m.barcode === searchTerm) || filteredMaterials[0];
-      if (foundMaterial) {
-        setSelectedMaterial(foundMaterial);
-      }
-    }
   };
 
   const handleMaterialClick = (material: Material) => {
@@ -1526,17 +1514,6 @@ export default function MaterialManagement() {
       setSelectedMaterials(allIds);
       setShowSelectAll(true);
     }
-  };
-
-  const handleSelectAllFiltered = () => {
-    const allFilteredIds = filteredMaterials.map(m => m.id);
-    setSelectedMaterials(allFilteredIds);
-    setShowSelectAll(true);
-  };
-
-  const truncateText = (text: string, maxLength: number = 35) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
   };
 
   const handleExportExcel = () => {
@@ -1626,11 +1603,11 @@ export default function MaterialManagement() {
 
   const getStockStatusBadge = (material: Material) => {
     if (material.currentStock === 0) {
-      return <span className="inline-flex px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">Stok Yok</span>;
+      return <span className="material-status-badge bg-red-100 text-red-800">Stok Yok</span>;
     } else if (material.currentStock <= material.minStock) {
-      return <span className="inline-flex px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">Kritik Stok</span>;
+      return <span className="material-status-badge bg-yellow-100 text-yellow-800">Kritik Stok</span>;
     } else {
-      return <span className="inline-flex px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">Yeterli Stok</span>;
+      return <span className="material-status-badge bg-green-100 text-green-800">Yeterli Stok</span>;
     }
   };
 
@@ -1643,7 +1620,7 @@ export default function MaterialManagement() {
     };
     
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${colors[status]}`}>
+      <span className={`material-status-badge ${colors[status]}`}>
         {status.toUpperCase()}
       </span>
     );
@@ -1665,11 +1642,7 @@ export default function MaterialManagement() {
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 rounded-lg transition-all ${
-            currentPage === i
-              ? 'bg-blue-600/80 text-white'
-              : 'bg-white/60 text-gray-700 hover:bg-white/80'
-          } backdrop-blur-sm border border-white/20`}
+          className={`pagination-button ${currentPage === i ? 'active' : ''}`}
         >
           {i}
         </button>
@@ -1680,527 +1653,644 @@ export default function MaterialManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Malzeme Yönetimi</h2>
-        <div className="flex space-x-2">
+    <div className="material-grid-layout">
+      {/* Üst Bar - Kompakt */}
+      <div className="material-toolbar">
+        <div className="flex items-center space-x-3">
+          <h2 className="text-lg font-bold text-gray-800">Malzeme Yönetimi</h2>
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <Package className="h-4 w-4" />
+            <span>Toplam: <span className="font-semibold">{filteredMaterials.length}</span></span>
+            {filteredMaterials.length !== materials.length && (
+              <>
+                <span className="text-gray-400">|</span>
+                <span className="text-blue-600">Filtrelenmiş</span>
+              </>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
           <button
             onClick={() => setShowExcelImport(true)}
-            className="bg-gradient-to-r from-purple-600/90 to-purple-700/90 hover:from-purple-700/90 hover:to-purple-800/90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
+            className="btn-modern-secondary text-sm"
           >
-            <Upload className="h-5 w-5" />
-            <span>Excel/CSV İçe Aktar</span>
+            <Upload className="h-4 w-4" />
+            <span>Excel İçe Aktar</span>
           </button>
           <button
             onClick={handleExportExcel}
-            className="bg-gradient-to-r from-green-600/90 to-green-700/90 hover:from-green-700/90 hover:to-green-800/90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
+            className="btn-modern-secondary text-sm"
           >
-            <Download className="h-5 w-5" />
+            <Download className="h-4 w-4" />
             <span>Excel İndir</span>
           </button>
           <button
             onClick={() => setShowBarcodeScanner(true)}
-            className="bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
+            className="btn-modern-secondary text-sm"
           >
-            <Camera className="h-5 w-5" />
+            <Camera className="h-4 w-4" />
             <span>Barkod Tara</span>
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
+            className="btn-modern text-sm"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-4 w-4" />
             <span>Yeni Malzeme</span>
           </button>
         </div>
       </div>
 
-      {/* Toplu İşlemler Barı */}
-      {selectedMaterials.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <CheckSquare className="h-5 w-5 text-blue-600" />
-                <span className="font-semibold text-blue-800">
-                  {selectedMaterials.length} malzeme seçildi
-                </span>
-              </div>
-              <button
-                onClick={() => setShowStatusChangeModal(true)}
-                className="bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
-              >
-                <Edit2 className="h-4 w-4" />
-                <span>Statü Değiştir</span>
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedMaterials([]);
-                  setShowSelectAll(false);
-                }}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                Seçimi Temizle
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white/60 backdrop-blur-sm rounded-lg shadow-md p-6 border border-white/20">
-        {/* Arama Formu */}
-        <form onSubmit={handleSearch}>
-          <div className="flex flex-col lg:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+      {/* Arama ve Filtreler */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <form onSubmit={handleSearch} className="space-y-4">
+          <div className="material-search-bar">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
-                ref={searchInputRef}
                 type="text"
                 placeholder="Malzeme adı, barkod, GTIN, SN, kategori veya tedarikçi ara..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch(e);
-                  }
-                }}
               />
             </div>
-            <div className="flex gap-2">
-              <Filter className="h-5 w-5 text-gray-400 mt-2" />
-              <select
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="all">Tüm Kategoriler</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.name}>{category.name}</option>
-                ))}
-              </select>
-              <select
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-              >
-                <option value="all">Tüm Statüler</option>
-                <option value="normal">Normal</option>
-                <option value="konsinye">Konsinye</option>
-                <option value="iade">İade</option>
-                <option value="faturalı">Faturalı</option>
-              </select>
-              <label className="flex items-center space-x-2 bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-200">
-                <input
-                  type="checkbox"
-                  checked={lowStockOnly}
-                  onChange={(e) => setLowStockOnly(e.target.checked)}
-                  className="rounded text-yellow-600 focus:ring-yellow-500"
-                />
-                <span className="text-sm text-yellow-800">Sadece Kritik Stok</span>
-              </label>
+            
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="all">Tüm Kategoriler</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.name}>{category.name}</option>
+              ))}
+            </select>
+            
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              <option value="all">Tüm Statüler</option>
+              <option value="normal">Normal</option>
+              <option value="konsinye">Konsinye</option>
+              <option value="iade">İade</option>
+              <option value="faturalı">Faturalı</option>
+            </select>
+            
+            <label className="flex items-center space-x-2 bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-200 text-sm cursor-pointer hover:bg-yellow-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={lowStockOnly}
+                onChange={(e) => setLowStockOnly(e.target.checked)}
+                className="rounded text-yellow-600 focus:ring-yellow-500 h-4 w-4"
+              />
+              <span className="text-yellow-800 font-medium">Kritik Stok</span>
+            </label>
+            
+            <button
+              type="submit"
+              className="btn-modern text-sm"
+            >
+              <Search className="h-4 w-4" />
+              <span>Ara</span>
+            </button>
+            
+            {(searchTerm || selectedCategory !== 'all' || lowStockOnly || selectedStatus !== 'all') && (
               <button
-                type="submit"
-                className="bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
+                type="button"
+                onClick={clearAllFilters}
+                className="text-sm text-gray-600 hover:text-gray-800 flex items-center space-x-1"
               >
-                <Search className="h-4 w-4" />
-                <span>Ara</span>
+                <X className="h-4 w-4" />
+                <span>Filtreleri Temizle</span>
               </button>
-            </div>
+            )}
           </div>
+          
+          {selectedMaterials.length > 0 && (
+            <div className="material-bulk-actions">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <CheckSquare className="h-4 w-4 text-blue-600" />
+                  <span className="font-semibold text-blue-800 text-sm">
+                    {selectedMaterials.length} malzeme seçildi
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowStatusChangeModal(true)}
+                  className="btn-modern text-sm"
+                >
+                  <Edit2 className="h-4 w-4" />
+                  <span>Statü Değiştir</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedMaterials([]);
+                    setShowSelectAll(false);
+                  }}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Seçimi Temizle
+                </button>
+              </div>
+            </div>
+          )}
         </form>
+      </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-max">
+      {/* Tablo Container - Yatay ve dikey kaydırma */}
+      <div className="material-table-container">
+        {/* Kaydırma yönlendirmesi */}
+        <div className="material-table-scroll-hint">
+          <div className="flex items-center justify-center space-x-2 text-blue-800 text-sm">
+            <MoveHorizontal className="h-4 w-4 animate-pulse" />
+            <span className="font-medium">Sağa kaydırarak tüm sütunları görebilirsiniz</span>
+            <ArrowRight className="h-4 w-4 animate-pulse" />
+          </div>
+        </div>
+
+        {/* Tablo wrapper */}
+        <div className="material-table-wrapper" ref={tableContainerRef}>
+          <table className="material-table">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 w-12">
-                  <button
-                    onClick={handleSelectAll}
-                    className="flex items-center justify-center w-8 h-8 rounded hover:bg-gray-100"
-                    title={showSelectAll ? "Tümünü Kaldır" : "Tümünü Seç"}
-                  >
-                    {showSelectAll ? (
-                      <CheckSquare className="h-5 w-5 text-blue-600" />
-                    ) : (
-                      <Square className="h-5 w-5 text-gray-400" />
-                    )}
-                  </button>
+              <tr>
+                {/* Checkbox Sütunu - Sabit */}
+                <th className="sticky-left" style={{ width: '50px' }}>
+                  <div className="column-header">
+                    <button
+                      onClick={handleSelectAll}
+                      className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 transition-colors"
+                      title={showSelectAll ? "Tümünü Kaldır" : "Tümünü Seç"}
+                    >
+                      {showSelectAll ? (
+                        <CheckSquare className="h-4 w-4 text-blue-600" />
+                      ) : (
+                        <Square className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[120px]">
-                  <span>Barkod</span>
+                
+                {/* Barkod */}
+                <th style={{ width: '150px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Barkod</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>GTIN</span>
+                
+                {/* GTIN */}
+                <th style={{ width: '120px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">GTIN</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>SN</span>
+                
+                {/* SN */}
+                <th style={{ width: '120px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">SN</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[120px]">
-                  <span>UDI Code</span>
+                
+                {/* UDI Code */}
+                <th style={{ width: '120px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">UDI Code</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[120px]">
-                  <span>All Barcode</span>
+                
+                {/* All Barcode */}
+                <th style={{ width: '140px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">All Barcode</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[180px]">
-                  <span>Malzeme</span>
+                
+                {/* Malzeme Adı */}
+                <th style={{ width: '200px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Malzeme</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[120px]">
-                  <span>Sezgisel Kod</span>
+                
+                {/* Sezgisel Kod */}
+                <th style={{ width: '120px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Sezgisel Kod</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>Statü</span>
+                
+                {/* Statü */}
+                <th style={{ width: '100px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Statü</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>SKT</span>
+                
+                {/* Kategori */}
+                <th style={{ width: '120px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Kategori</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[120px]">
-                  <span>Seri No Durumu</span>
+                
+                {/* Alt Kategori */}
+                <th style={{ width: '120px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Alt Kategori</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[180px]">
-                  <span>Malzeme Açıklama</span>
+                
+                {/* Birim */}
+                <th style={{ width: '80px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Birim</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[120px]">
-                  <span>Kategori</span>
+                
+                {/* Birim Fiyat */}
+                <th style={{ width: '100px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Birim Fiyat</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[120px]">
-                  <span>Alt Kategori</span>
+                
+                {/* Mevcut Stok */}
+                <th style={{ width: '100px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Mevcut Stok</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[80px]">
-                  <span>Birim</span>
+                
+                {/* Kritik Stok */}
+                <th style={{ width: '100px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Kritik Stok</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>Birim Fiyat</span>
+                
+                {/* Stok Durumu */}
+                <th style={{ width: '120px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Stok Durumu</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>Mevcut Stok</span>
+                
+                {/* Tedarikçi */}
+                <th style={{ width: '150px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Tedarikçi</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>Kritik Stok</span>
+                
+                {/* SKT */}
+                <th style={{ width: '100px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">SKT</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>Stok Durumu</span>
+                
+                {/* Seri No Durumu */}
+                <th style={{ width: '140px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Seri No Durumu</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[120px]">
-                  <span>Tedarikçi</span>
+                
+                {/* Malzeme Açıklama */}
+                <th style={{ width: '200px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">Açıklama</span>
+                  </div>
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 min-w-[100px]">
-                  <span>İşlemler</span>
+                
+                {/* İşlemler - Sabit */}
+                <th className="sticky-right" style={{ width: '120px' }}>
+                  <div className="column-header">
+                    <span className="column-header-text">İşlemler</span>
+                  </div>
                 </th>
               </tr>
             </thead>
+            
             <tbody>
-              {currentMaterials.map((material) => (
-                <tr key={material.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4">
+              {currentMaterials.map((material, index) => (
+                <tr key={material.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                  {/* Checkbox - Sabit */}
+                  <td className="sticky-left">
                     <input
                       type="checkbox"
                       checked={selectedMaterials.includes(material.id)}
                       onChange={(e) => handleMaterialSelect(material.id, e.target.checked)}
-                      className="rounded text-blue-600 focus:ring-blue-500"
+                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
                     />
                   </td>
-                  <td className="py-3 px-4">
+                  
+                  {/* Barkod */}
+                  <td>
                     <div className="group relative">
                       <button
                         onClick={(e) => handleQuickEditClick(material, e)}
                         className="flex items-center space-x-2 hover:text-blue-600 transition-colors text-left w-full"
                       >
-                        <Barcode className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <span className="font-mono text-sm truncate block min-w-0">
+                        <Barcode className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                        <span className="font-mono text-sm column-cell">
                           {material.barcode}
                         </span>
                       </button>
-                      <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                        {material.barcode}
-                        <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                      </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  
+                  {/* GTIN */}
+                  <td>
+                    <span className="font-mono text-sm column-cell">
+                      {material.gtin || '-'}
+                    </span>
+                  </td>
+                  
+                  {/* SN */}
+                  <td>
                     <div className="group relative">
-                      <span className="font-mono text-sm truncate block min-w-0">
-                        {material.gtin || '-'}
+                      <span className="font-mono text-sm column-cell">
+                        {material.sn || '-'}
                       </span>
-                      {material.gtin && material.gtin.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.gtin}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
                     </div>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="group relative">
-                      <button
-                        onClick={(e) => handleQuickEditClick(material, e)}
-                        className="flex items-center space-x-2 hover:text-blue-600 transition-colors text-left w-full"
-                      >
-                        <span className="font-mono text-sm truncate block min-w-0">
-                          {material.sn || '-'}
-                        </span>
-                      </button>
-                      {material.sn && material.sn.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.sn}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
+                  
+                  {/* UDI Code */}
+                  <td>
+                    <span className="font-mono text-sm column-cell">
+                      {material.udiCode || '-'}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="group relative">
-                      <span className="font-mono text-sm truncate block min-w-0">
-                        {material.udiCode || '-'}
-                      </span>
-                      {material.udiCode && material.udiCode.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.udiCode}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
+                  
+                  {/* All Barcode */}
+                  <td>
+                    <span className="font-mono text-sm column-cell">
+                      {material.allBarcode || '-'}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="group relative">
-                      <span className="font-mono text-sm truncate block min-w-0">
-                        {material.allBarcode || '-'}
-                      </span>
-                      {material.allBarcode && material.allBarcode.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.allBarcode}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
+                  
+                  {/* Malzeme Adı */}
+                  <td>
                     <div className="group relative">
                       <button
                         onClick={() => handleMaterialClick(material)}
                         className="flex items-center space-x-2 hover:text-blue-600 transition-colors text-left w-full"
                       >
-                        <Package className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <span className="font-medium truncate block min-w-0">
+                        <Package className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                        <span className="font-medium text-sm column-cell">
                           {material.name}
                         </span>
                       </button>
-                      <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap max-w-xs">
-                        {material.name}
-                        <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                      </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  
+                  {/* Sezgisel Kod */}
+                  <td>
                     <div className="group relative">
-                      <button
-                        onClick={(e) => handleQuickEditClick(material, e)}
-                        className="flex items-center space-x-2 hover:text-blue-600 transition-colors text-left w-full"
-                      >
-                        <span className="text-sm text-gray-600 truncate block min-w-0">
-                          {material.intuitiveCode || '-'}
-                        </span>
-                      </button>
-                      {material.intuitiveCode && material.intuitiveCode.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.intuitiveCode}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
+                      <span className="text-gray-600 text-sm column-cell">
+                        {material.intuitiveCode || '-'}
+                      </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  
+                  {/* Statü */}
+                  <td>
                     {getStatusBadge(material.status || 'normal')}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {material.expirationDate ? (
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-3 w-3 text-gray-400" />
-                        <span>{material.expirationDate}</span>
-                      </div>
-                    ) : (
-                      '-'
-                    )}
+                  
+                  {/* Kategori */}
+                  <td>
+                    <span className="text-sm text-gray-600 column-cell">
+                      {material.category}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="group relative">
-                      <span className="text-sm text-gray-600 truncate block min-w-0">
-                        {material.serialNoStatus || '-'}
-                      </span>
-                      {material.serialNoStatus && material.serialNoStatus.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.serialNoStatus}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
+                  
+                  {/* Alt Kategori */}
+                  <td>
+                    <span className="text-sm text-gray-600 column-cell">
+                      {material.subCategory || '-'}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="group relative">
-                      <span className="text-sm text-gray-600 truncate block min-w-0">
-                        {material.materialDescription || material.name}
-                      </span>
-                      {(material.materialDescription || material.name).length > 25 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap max-w-xs">
-                          {material.materialDescription || material.name}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
+                  
+                  {/* Birim */}
+                  <td>
+                    <span className="text-sm text-gray-600 column-cell">
+                      {material.unit}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="group relative">
-                      <span className="text-sm text-gray-600 truncate block min-w-0">
-                        {material.category}
-                      </span>
-                      {material.category.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.category}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
+                  
+                  {/* Birim Fiyat */}
+                  <td>
+                    <span className="text-sm font-medium text-gray-700 column-cell">
+                      ₺{material.unitPrice.toFixed(2)}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="group relative">
-                      <span className="text-sm text-gray-600 truncate block min-w-0">
-                        {material.subCategory || '-'}
-                      </span>
-                      {material.subCategory && material.subCategory.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.subCategory}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{material.unit}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">₺{material.unitPrice.toFixed(2)}</td>
-                  <td className="py-3 px-4">
-                    <span className={`font-semibold ${
+                  
+                  {/* Mevcut Stok */}
+                  <td>
+                    <span className={`text-sm font-medium column-cell ${
                       material.currentStock === 0 ? 'text-red-600' :
                       material.currentStock <= material.minStock ? 'text-yellow-600' :
                       'text-green-600'
                     }`}>
-                      {material.currentStock} {material.unit}
+                      {material.currentStock}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{material.minStock} {material.unit}</td>
-                  <td className="py-3 px-4">
+                  
+                  {/* Kritik Stok */}
+                  <td>
+                    <span className="text-sm text-gray-600 column-cell">
+                      {material.minStock}
+                    </span>
+                  </td>
+                  
+                  {/* Stok Durumu */}
+                  <td>
                     {getStockStatusBadge(material)}
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="group relative">
-                      <span className="text-sm text-gray-600 truncate block min-w-0">
-                        {material.supplier}
-                      </span>
-                      {material.supplier && material.supplier.length > 15 && (
-                        <div className="absolute z-10 left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap">
-                          {material.supplier}
-                          <div className="absolute left-2 -top-1 border-4 border-transparent border-b-gray-900"></div>
-                        </div>
-                      )}
-                    </div>
+                  
+                  {/* Tedarikçi */}
+                  <td>
+                    <span className="text-sm text-gray-600 column-cell">
+                      {material.supplier || '-'}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="flex space-x-2">
+                  
+                  {/* SKT */}
+                  <td>
+                    {material.expirationDate ? (
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        <span className="text-sm">{material.expirationDate}</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-400">-</span>
+                    )}
+                  </td>
+                  
+                  {/* Seri No Durumu */}
+                  <td>
+                    <span className="text-sm text-gray-600 column-cell">
+                      {material.serialNoStatus || '-'}
+                    </span>
+                  </td>
+                  
+                  {/* Malzeme Açıklama */}
+                  <td>
+                    <span className="text-sm text-gray-600 column-cell truncate" title={material.materialDescription || ''}>
+                      {material.materialDescription || '-'}
+                    </span>
+                  </td>
+                  
+                  {/* İşlemler - Sabit */}
+                  <td className="sticky-right">
+                    <div className="flex items-center space-x-1">
                       <button
                         onClick={() => handleMaterialClick(material)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
+                        className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
                         title="Detayları Görüntüle"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => setEditingMaterial(material)}
-                        className="text-yellow-600 hover:text-yellow-800 p-1"
+                        className="p-1 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded transition-colors"
                         title="Tam Düzenle"
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Edit2 className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteMaterial(material.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
+                        className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
                         title="Sil"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
+              
+              {currentMaterials.length === 0 && (
+                <tr>
+                  <td colSpan={21} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Package className="h-16 w-16 text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Malzeme bulunamadı</h3>
+                      <p className="text-gray-500 text-sm mb-4 max-w-md">
+                        {searchTerm || selectedCategory !== 'all' || lowStockOnly || selectedStatus !== 'all'
+                          ? 'Arama kriterlerinize uygun malzeme bulunamadı.'
+                          : 'Henüz hiç malzeme eklenmemiş.'
+                        }
+                      </p>
+                      {(searchTerm || selectedCategory !== 'all' || lowStockOnly || selectedStatus !== 'all') && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="btn-modern"
+                        >
+                          Filtreleri Temizle
+                        </button>
+                      )}
+                      {!searchTerm && selectedCategory === 'all' && !lowStockOnly && selectedStatus === 'all' && (
+                        <button
+                          onClick={() => setShowAddModal(true)}
+                          className="btn-modern"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          İlk Malzemeyi Ekle
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
-
-          {filteredMaterials.length === 0 && (
-            <div className="text-center py-12">
-              <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Malzeme bulunamadı</h3>
-              <p className="text-gray-500 mb-4">
-                {searchTerm || selectedCategory !== 'all' || lowStockOnly || selectedStatus !== 'all'
-                  ? 'Arama kriterlerinize uygun malzeme bulunamadı.'
-                  : 'Henüz hiç malzeme eklenmemiş.'
-                }
-              </p>
-              {(searchTerm || selectedCategory !== 'all' || lowStockOnly || selectedStatus !== 'all') && (
-                <button
-                  onClick={clearAllFilters}
-                  className="bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white px-4 py-2 rounded-lg backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
-                >
-                  Filtreleri Temizle
-                </button>
-              )}
-            </div>
-          )}
         </div>
+      </div>
 
-        {/* Sayfalama Bileşeni */}
-        {filteredMaterials.length > 0 && (
-          <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-gray-200 space-y-4 sm:space-y-0">
-            <div className="text-sm text-gray-600">
-              Toplam <span className="font-semibold">{filteredMaterials.length}</span> malzeme
-              {materials.length !== filteredMaterials.length && (
-                <span> (filtrelenmiş)</span>
-              )
-              }
-              {' - '}
-              Gösterilen: <span className="font-semibold">
-                {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredMaterials.length)}
+      {/* Alt Bar - Sayfalama */}
+      <div className="pagination-container">
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-600">
+            Gösterilen: <span className="font-semibold">
+              {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredMaterials.length)}
+            </span> / <span className="font-semibold">{filteredMaterials.length}</span>
+            {selectedMaterials.length > 0 && (
+              <span className="ml-3 text-blue-600 font-semibold">
+                {selectedMaterials.length} seçili
               </span>
-              {selectedMaterials.length > 0 && (
-                <span className="ml-4 text-blue-600 font-semibold">
-                  {selectedMaterials.length} malzeme seçili
-                </span>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg bg-white/60 disabled:bg-gray-100 disabled:text-gray-400 text-gray-700 hover:bg-white/80 transition-all backdrop-blur-sm border border-white/20 disabled:border-gray-200"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              
-              {renderPageNumbers()}
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg bg-white/60 disabled:bg-gray-100 disabled:text-gray-400 text-gray-700 hover:bg-white/80 transition-all backdrop-blur-sm border border-white/20 disabled:border-gray-200"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="text-sm text-gray-600">
-              Kritik Stok: <span className="font-semibold text-red-600">
-                {filteredMaterials.filter(m => m.currentStock <= m.minStock).length}
-              </span>
-            </div>
+            )}
           </div>
-        )}
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+              className="pagination-button"
+              title="İlk Sayfa"
+            >
+              «
+            </button>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="pagination-button"
+              title="Önceki Sayfa"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            
+            {renderPageNumbers()}
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="pagination-button"
+              title="Sonraki Sayfa"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              className="pagination-button"
+              title="Son Sayfa"
+            >
+              »
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-gray-600">
+            Kritik Stok: <span className="font-semibold text-red-600">
+              {filteredMaterials.filter(m => m.currentStock <= m.minStock).length}
+            </span>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Sayfa başı:</span>
+            <select
+              className="page-size-selector"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setCurrentPage(1);
+                // itemsPerPage state'ini güncellemek için props eklemeniz gerekebilir
+              }}
+            >
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Modaller */}
@@ -2260,7 +2350,7 @@ export default function MaterialManagement() {
   );
 }
 
-// Malzeme Modal Component - GÜNCELLENMİŞ (Manuel kategori/tedarikçi ekleme)
+// Malzeme Modal Component
 interface MaterialModalProps {
   material?: Material | null;
   categories: Category[];
@@ -2351,132 +2441,125 @@ function MaterialModal({ material, categories, suppliers, onSave, onClose }: Mat
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white/90 backdrop-blur-md rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto border border-white/20">
-        <h3 className="text-lg font-semibold mb-4">
-          {material ? 'Malzeme Bilgilerini Düzenle' : 'Yeni Malzeme Ekle'}
-        </h3>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Malzeme Adı *
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Barkod
-              </label>
-              <div className="flex space-x-2">
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-4xl mx-4">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold mb-4">
+            {material ? 'Malzeme Bilgilerini Düzenle' : 'Yeni Malzeme Ekle'}
+          </h3>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Malzeme Adı *
+                </label>
                 <input
                   type="text"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                  value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                  placeholder="Boş bırakılırsa otomatik oluşturulur"
+                  required
+                  className="input-modern"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowBarcodeScanner(true)}
-                  className="bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white px-3 py-2 rounded-lg flex items-center space-x-2 transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
-                >
-                  <Camera className="h-4 w-4" />
-                  <span>Tara</span>
-                </button>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Barkod
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    className="input-modern flex-1"
+                    value={formData.barcode}
+                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                    placeholder="Boş bırakılırsa otomatik oluşturulur"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowBarcodeScanner(true)}
+                    className="btn-modern"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <span>Tara</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                GTIN
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.gtin}
-                onChange={(e) => setFormData({ ...formData, gtin: e.target.value })}
-                placeholder="GTIN numarası"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                SN
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.sn}
-                onChange={(e) => setFormData({ ...formData, sn: e.target.value })}
-                placeholder="Seri numarası"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                UDI Code
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.udiCode}
-                onChange={(e) => setFormData({ ...formData, udiCode: e.target.value })}
-                placeholder="UDI kodu"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                All Barcode
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.allBarcode}
-                onChange={(e) => setFormData({ ...formData, allBarcode: e.target.value })}
-                placeholder="Tüm barkodlar"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kategori
-                <button
-                  type="button"
-                  onClick={() => setNewCategory('')}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-800"
-                >
-                  + Yeni Ekle
-                </button>
-              </label>
-              <div className="flex space-x-2">
-                <select
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="">Kategori seçin</option>
-                  {categories.map(category => (
-                    <option key={category.id} value={category.name}>{category.name}</option>
-                  ))}
-                </select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  GTIN
+                </label>
+                <input
+                  type="text"
+                  className="input-modern"
+                  value={formData.gtin}
+                  onChange={(e) => setFormData({ ...formData, gtin: e.target.value })}
+                  placeholder="GTIN numarası"
+                />
               </div>
-              {newCategory === '' && (
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  SN
+                </label>
+                <input
+                  type="text"
+                  className="input-modern"
+                  value={formData.sn}
+                  onChange={(e) => setFormData({ ...formData, sn: e.target.value })}
+                  placeholder="Seri numarası"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  UDI Code
+                </label>
+                <input
+                  type="text"
+                  className="input-modern"
+                  value={formData.udiCode}
+                  onChange={(e) => setFormData({ ...formData, udiCode: e.target.value })}
+                  placeholder="UDI kodu"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  All Barcode
+                </label>
+                <input
+                  type="text"
+                  className="input-modern"
+                  value={formData.allBarcode}
+                  onChange={(e) => setFormData({ ...formData, allBarcode: e.target.value })}
+                  placeholder="Tüm barkodlar"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kategori
+                </label>
+                <div className="flex space-x-2">
+                  <select
+                    className="input-modern flex-1"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="">Kategori seçin</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.name}>{category.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="button"
                   onClick={() => setNewCategory('Yeni kategori...')}
@@ -2484,130 +2567,121 @@ function MaterialModal({ material, categories, suppliers, onSave, onClose }: Mat
                 >
                   + Yeni Kategori Ekle
                 </button>
-              )}
-              {newCategory !== '' && (
-                <div className="mt-2 flex space-x-2">
-                  <input
-                    type="text"
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    placeholder="Yeni kategori adı"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCategory}
-                    className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    Ekle
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewCategory('')}
-                    className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
-                  >
-                    İptal
-                  </button>
-                </div>
-              )}
+                {newCategory !== '' && (
+                  <div className="mt-2 flex space-x-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="Yeni kategori adı"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCategory}
+                      className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                    >
+                      Ekle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewCategory('')}
+                      className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
+                    >
+                      İptal
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Alt Kategori
+                </label>
+                <input
+                  type="text"
+                  className="input-modern"
+                  value={formData.subCategory}
+                  onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
+                  placeholder="Alt kategori (isteğe bağlı)"
+                />
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Alt Kategori
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.subCategory}
-                onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
-                placeholder="Alt kategori (isteğe bağlı)"
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Mevcut Stok
-              </label>
-              <input
-                type="number"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.currentStock}
-                onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Birim Fiyat (₺)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.unitPrice}
-                onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Birim
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-              >
-                {units.map(unit => (
-                  <option key={unit} value={unit}>{unit}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kritik Stok
-              </label>
-              <input
-                type="number"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.minStock}
-                onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tedarikçi
-                <button
-                  type="button"
-                  onClick={() => setNewSupplier('')}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-800"
-                >
-                  + Yeni Ekle
-                </button>
-              </label>
-              <div className="flex space-x-2">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mevcut Stok
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input-modern"
+                  value={formData.currentStock}
+                  onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Birim Fiyat (₺)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="input-modern"
+                  value={formData.unitPrice}
+                  onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Birim
+                </label>
                 <select
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                  value={formData.supplier}
-                  onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                  className="input-modern"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                 >
-                  <option value="">Tedarikçi seçin</option>
-                  {suppliers.map(supplier => (
-                    <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
+                  {units.map(unit => (
+                    <option key={unit} value={unit}>{unit}</option>
                   ))}
                 </select>
               </div>
-              {newSupplier === '' && (
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kritik Stok
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input-modern"
+                  value={formData.minStock}
+                  onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tedarikçi
+                </label>
+                <div className="flex space-x-2">
+                  <select
+                    className="input-modern flex-1"
+                    value={formData.supplier}
+                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                  >
+                    <option value="">Tedarikçi seçin</option>
+                    {suppliers.map(supplier => (
+                      <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="button"
                   onClick={() => setNewSupplier('Yeni tedarikçi...')}
@@ -2615,145 +2689,145 @@ function MaterialModal({ material, categories, suppliers, onSave, onClose }: Mat
                 >
                   + Yeni Tedarikçi Ekle
                 </button>
-              )}
-              {newSupplier !== '' && (
-                <div className="mt-2 flex space-x-2">
-                  <input
-                    type="text"
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
-                    value={newSupplier}
-                    onChange={(e) => setNewSupplier(e.target.value)}
-                    placeholder="Yeni tedarikçi adı"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddSupplier}
-                    className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    Ekle
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewSupplier('')}
-                    className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
-                  >
-                    İptal
-                  </button>
-                </div>
-              )}
+                {newSupplier !== '' && (
+                  <div className="mt-2 flex space-x-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                      value={newSupplier}
+                      onChange={(e) => setNewSupplier(e.target.value)}
+                      placeholder="Yeni tedarikçi adı"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSupplier}
+                      className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                    >
+                      Ekle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewSupplier('')}
+                      className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
+                    >
+                      İptal
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                SKT
-              </label>
-              <input
-                type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.expirationDate}
-                onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
-              />
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  SKT
+                </label>
+                <input
+                  type="date"
+                  className="input-modern"
+                  value={formData.expirationDate}
+                  onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Seri No Durumu
+                </label>
+                <select
+                  className="input-modern"
+                  value={formData.serialNoStatus}
+                  onChange={(e) => setFormData({ ...formData, serialNoStatus: e.target.value })}
+                >
+                  <option value="">Seçiniz</option>
+                  <option value="Aktif">Aktif</option>
+                  <option value="Pasif">Pasif</option>
+                  <option value="İade">İade</option>
+                  <option value="Hurda">Hurda</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Statü
+                </label>
+                <select
+                  className="input-modern"
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as MaterialStatus })}
+                >
+                  {statusOptions.map(status => (
+                    <option key={status} value={status}>{status.toUpperCase()}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Seri No Durumu
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.serialNoStatus}
-                onChange={(e) => setFormData({ ...formData, serialNoStatus: e.target.value })}
-              >
-                <option value="">Seçiniz</option>
-                <option value="Aktif">Aktif</option>
-                <option value="Pasif">Pasif</option>
-                <option value="İade">İade</option>
-                <option value="Hurda">Hurda</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Statü
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as MaterialStatus })}
-              >
-                {statusOptions.map(status => (
-                  <option key={status} value={status}>{status.toUpperCase()}</option>
-                ))}
-              </select>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sezgisel Kod
+                </label>
+                <input
+                  type="text"
+                  className="input-modern"
+                  value={formData.intuitiveCode}
+                  onChange={(e) => setFormData({ ...formData, intuitiveCode: e.target.value })}
+                  placeholder="Sezgisel kod"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Seri Numarası
+                </label>
+                <input
+                  type="text"
+                  className="input-modern"
+                  value={formData.serialNumber}
+                  onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+                  placeholder="Seri numarası"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sezgisel Kod
+                Malzeme Açıklama
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.intuitiveCode}
-                onChange={(e) => setFormData({ ...formData, intuitiveCode: e.target.value })}
-                placeholder="Sezgisel kod"
+                className="input-modern"
+                value={formData.materialDescription}
+                onChange={(e) => setFormData({ ...formData, materialDescription: e.target.value })}
+                placeholder="Malzeme açıklaması"
               />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Seri Numarası
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-                value={formData.serialNumber}
-                onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                placeholder="Seri numarası"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Malzeme Açıklama
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/50"
-              value={formData.materialDescription}
-              onChange={(e) => setFormData({ ...formData, materialDescription: e.target.value })}
-              placeholder="Malzeme açıklaması"
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                className="btn-modern flex-1"
+              >
+                {material ? 'Güncelle' : 'Ekle'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-modern-secondary flex-1"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+
+          {showBarcodeScanner && (
+            <BarcodeScannerModal
+              onScan={handleBarcodeScan}
+              onClose={() => setShowBarcodeScanner(false)}
             />
-          </div>
-
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="submit"
-              className="flex-1 bg-gradient-to-r from-blue-600/90 to-blue-700/90 hover:from-blue-700/90 hover:to-blue-800/90 text-white py-2 px-4 rounded-lg font-medium transition-all backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl"
-            >
-              {material ? 'Güncelle' : 'Ekle'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-300/80 hover:bg-gray-400/80 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all backdrop-blur-sm border border-white/20"
-            >
-              İptal
-            </button>
-          </div>
-        </form>
-
-        {showBarcodeScanner && (
-          <BarcodeScannerModal
-            onScan={handleBarcodeScan}
-            onClose={() => setShowBarcodeScanner(false)}
-          />
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
