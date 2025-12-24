@@ -93,7 +93,7 @@ const StatusCard: React.FC<{
 
   return (
     <div 
-      className={`${config.bgColor} rounded-xl shadow-sm border ${config.borderColor} p-4 transition-all duration-300 hover:shadow-md hover:border-${config.borderColor.split('-')[1]}-300`}
+      className={`${config.bgColor} rounded-xl shadow-sm border ${config.borderColor} p-4 transition-all duration-300 hover:shadow-md hover:border-blue-300`}
     >
       <div className="flex items-center justify-between">
         <div>
