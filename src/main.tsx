@@ -295,29 +295,8 @@ function LoadingScreen() {
   );
 }
 
-// Service Worker kayıt fonksiyonu
-const registerServiceWorker = async () => {
-  if ('serviceWorker' in navigator && import.meta.env.PROD) {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('✅ Service Worker başarıyla kaydedildi:', registration.scope);
-      
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('🔄 Yeni versiyon mevcut! Sayfayı yenileyin.');
-              // Kullanıcıya bildirim gösterebilirsiniz
-            }
-          });
-        }
-      });
-    } catch (error) {
-      console.warn('⚠️ Service Worker kaydı başarısız:', error);
-    }
-  }
-};
+// SİLİNDİ: Service Worker kayıt fonksiyonu
+// Bu kısım tamamen kaldırıldı
 
 // Sistem sağlık kontrolü
 const checkSystemHealth = () => {
@@ -522,8 +501,7 @@ const initializeApp = async () => {
     root.render(<LoadingScreen />);
     console.log('⏳ Loading ekranı gösteriliyor...');
 
-    // PWA desteği
-    await registerServiceWorker();
+    // SİLİNDİ: Service Worker kaydı artık yapılmıyor
 
     // Global hata yakalayıcıları kur
     setupGlobalErrorHandlers();
@@ -542,14 +520,13 @@ const initializeApp = async () => {
       );
       
       console.log('🎉 Uygulama başarıyla başlatıldı!');
-    
       
       // Başarı bildirimi
       if (DEBUG_MODE) {
         console.log('🔧 Debug modu aktif');
         console.log('📊 Hata logları:', errorLogs);
       }
-    }, 300); // 1.5 saniye loading süresi
+    }, 300); // 0.3 saniye loading süresi
 
   } catch (error: any) {
     console.error('❌ Uygulama başlatılamadı:', error);
