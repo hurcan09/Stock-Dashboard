@@ -1340,7 +1340,7 @@ export default function MaterialManagement() {
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [quickEditMaterial, setQuickEditMaterial] = useState<Material | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(20);
+  const [itemsPerPage] = useState(10);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
   const [showSelectAll, setShowSelectAll] = useState(false);

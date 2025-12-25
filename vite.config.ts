@@ -5,9 +5,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   base: '/',
   plugins: [react()],
-  optimizeDeps: {
+  // optimizeDeps kısmını TAMAMEN KALDIRIN veya düzeltin:
+  /* optimizeDeps: {
     exclude: ['lucide-react'],
-  },
+  }, */
   server: {
     proxy: {
       '/api': {
@@ -19,6 +20,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: false
+    sourcemap: false,
+    // Yeni ekleyin: Hash'li dosya isimleri için
+    rollupOptions: {
+      output: {
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js'
+      }
+    }
   }
 });
