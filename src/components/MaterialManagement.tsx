@@ -7,7 +7,8 @@ import {
   MoreVertical, Copy, Printer, QrCode, AlertTriangle,
   RefreshCw, Save, Star, Shield, Lock, Unlock,
   BarChart3, TrendingUp, TrendingDown, PackageOpen,
-  Layers, Grid3X3, List, Grid, Menu, MoreHorizontal
+  Layers, Grid3X3, List, Grid, Menu, MoreHorizontal,
+  ArrowUp, ArrowDown
 } from 'lucide-react';
 import { Material, Category, Supplier, StockCount, StockCountSession, MaterialStatus } from '../types';
 import { dataService } from '../utils/dataService';
@@ -136,6 +137,253 @@ function BarcodeScannerModal({ onScan, onClose }: { onScan: (barcode: string) =>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Toplu Düzenleme Modal Component - Sistem Yöneticisi için
+function BulkEditModal({ 
+  selectedMaterials, 
+  onSave, 
+  onClose 
+}: { 
+  selectedMaterials: Material[];
+  onSave: (materialIds: string[], updates: { field: string; value: any }[]) => void;
+  onClose: () => void;
+}) {
+  const [edits, setEdits] = useState<{ field: string; value: any }[]>([]);
+  const [field, setField] = useState('unitPrice');
+  const [value, setValue] = useState('');
+
+  const currentUser = dataService.getCurrentUser();
+  const isSystemAdmin = currentUser.role === 'admin' || currentUser.permissions.manageMaterials;
+
+  if (!isSystemAdmin) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal-container w-full max-w-md mx-4">
+          <div className="p-6">
+            <div className="text-center py-8">
+              <Shield className="h-16 w-16 text-red-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-red-600 mb-2">Yetki Gerekli</h3>
+              <p className="text-gray-600">Bu işlemi yapmak için sistem yöneticisi yetkisine sahip olmalısınız.</p>
+              <button
+                onClick={onClose}
+                className="mt-4 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-6 rounded-lg font-medium transition-all"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleAddEdit = () => {
+    if (!field.trim() || value === '') return;
+    
+    const newEdit = { field, value: parseValue(field, value) };
+    setEdits([...edits, newEdit]);
+    setField('unitPrice');
+    setValue('');
+  };
+
+  const parseValue = (field: string, value: string) => {
+    switch (field) {
+      case 'unitPrice':
+      case 'currentStock':
+      case 'minStock':
+        return parseFloat(value);
+      case 'currentStock':
+      case 'minStock':
+        return parseInt(value);
+      default:
+        return value;
+    }
+  };
+
+  const handleRemoveEdit = (index: number) => {
+    const newEdits = [...edits];
+    newEdits.splice(index, 1);
+    setEdits(newEdits);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (edits.length === 0) {
+      alert('Lütfen en az bir düzenleme ekleyin!');
+      return;
+    }
+
+    const materialIds = selectedMaterials.map(m => m.id);
+    onSave(materialIds, edits);
+    onClose();
+  };
+
+  const fieldOptions = [
+    { value: 'unitPrice', label: 'Birim Fiyat (₺)', type: 'number' },
+    { value: 'currentStock', label: 'Mevcut Stok', type: 'number' },
+    { value: 'minStock', label: 'Kritik Stok', type: 'number' }
+  ];
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-2xl mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-xl font-semibold">Toplu Düzenleme</h3>
+              <p className="text-gray-600">{selectedMaterials.length} malzeme seçildi</p>
+            </div>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {/* Seçili Malzemeler Listesi */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
+                <Package className="h-5 w-5 mr-2" />
+                Seçili Malzemeler
+              </h4>
+              <div className="max-h-40 overflow-y-auto">
+                {selectedMaterials.slice(0, 10).map((material, index) => (
+                  <div key={material.id} className="flex items-center justify-between py-2 border-b border-blue-100 last:border-0">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{material.name}</div>
+                      <div className="text-xs text-gray-600">{material.barcode}</div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div>Stok: {material.currentStock}</div>
+                      <div>Fiyat: ₺{material.unitPrice.toFixed(2)}</div>
+                    </div>
+                  </div>
+                ))}
+                {selectedMaterials.length > 10 && (
+                  <div className="text-center text-sm text-blue-600 pt-2">
+                    ...ve {selectedMaterials.length - 10} malzeme daha
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Düzenleme Alanı */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-800 mb-4">Düzenlemeleri Ekleyin</h4>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Alan
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={field}
+                      onChange={(e) => setField(e.target.value)}
+                    >
+                      {fieldOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Değer
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type={fieldOptions.find(f => f.value === field)?.type || 'text'}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        placeholder={
+                          field === 'unitPrice' ? 'Örn: 25.50' :
+                          field === 'currentStock' ? 'Örn: 100' :
+                          'Örn: 10'
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddEdit}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Ekle</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Eklenen Düzenlemeler */}
+                {edits.length > 0 && (
+                  <div className="border-t pt-4">
+                    <h5 className="font-semibold text-gray-700 mb-2">Eklenen Düzenlemeler:</h5>
+                    <div className="space-y-2">
+                      {edits.map((edit, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                          <div>
+                            <span className="font-medium">
+                              {fieldOptions.find(f => f.value === edit.field)?.label}
+                            </span>
+                            <span className="ml-2">→</span>
+                            <span className="ml-2 font-semibold text-blue-600">
+                              {typeof edit.value === 'number' && edit.field === 'unitPrice' ? '₺' : ''}
+                              {edit.value}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveEdit(index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Uyarı */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-yellow-800 mb-1">Önemli!</h4>
+                  <p className="text-sm text-yellow-700">
+                    Bu işlem {selectedMaterials.length} malzemenin seçili alanlarını güncelleyecektir.
+                    Değişiklikler geri alınamaz. Lütfen emin olun.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Butonlar */}
+            <div className="flex space-x-3">
+              <button
+                onClick={handleSubmit}
+                disabled={edits.length === 0}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white py-3 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+              >
+                Toplu Güncelleme Yap
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 px-4 rounded-lg font-medium transition-all"
+              >
+                İptal
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1340,11 +1588,18 @@ export default function MaterialManagement() {
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [quickEditMaterial, setQuickEditMaterial] = useState<Material | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [showSelectAll, setShowSelectAll] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  } | null>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  const currentUser = dataService.getCurrentUser();
 
   useEffect(() => {
     loadData();
@@ -1364,9 +1619,54 @@ export default function MaterialManagement() {
     setSelectedMaterials([]);
     setShowSelectAll(false);
     setCurrentPage(1);
+    setSortConfig(null);
   };
 
-  const filteredMaterials = materials.filter(material => {
+  // Sıralama fonksiyonu
+  const sortMaterials = (materialsToSort: Material[]) => {
+    if (!sortConfig) return materialsToSort;
+    
+    return [...materialsToSort].sort((a, b) => {
+      let aValue: any = a;
+      let bValue: any = b;
+      
+      const keyPath = sortConfig.key.split('.');
+      keyPath.forEach(key => {
+        aValue = aValue[key];
+        bValue = bValue[key];
+      });
+      
+      // Eğer değerler undefined ise null olarak değerlendir
+      if (aValue === undefined || aValue === null) aValue = '';
+      if (bValue === undefined || bValue === null) bValue = '';
+      
+      // Sayısal değerler için kontrol
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      // Tarih için kontrol
+      if (sortConfig.key.includes('Date') || sortConfig.key.includes('date')) {
+        const dateA = new Date(aValue).getTime();
+        const dateB = new Date(bValue).getTime();
+        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+      
+      // String değerler için
+      aValue = String(aValue).toLowerCase();
+      bValue = String(bValue).toLowerCase();
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  const filteredMaterials = sortMaterials(materials.filter(material => {
     const matchesSearch = searchTerm ? 
       material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       material.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1385,7 +1685,7 @@ export default function MaterialManagement() {
     const matchesStatus = selectedStatus === 'all' || material.status === selectedStatus;
 
     return matchesSearch && matchesCategory && matchesLowStock && matchesStatus;
-  });
+  }));
 
   const totalPages = Math.ceil(filteredMaterials.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -1428,6 +1728,29 @@ export default function MaterialManagement() {
     loadData();
     setEditingMaterial(null);
     setQuickEditMaterial(null);
+  };
+
+  const handleBulkUpdate = (materialIds: string[], updates: { field: string; value: any }[]) => {
+    materialIds.forEach(materialId => {
+      const updateData: any = {};
+      updates.forEach(edit => {
+        updateData[edit.field] = edit.value;
+      });
+      dataService.updateMaterial(materialId, updateData);
+    });
+    
+    dataService.logAction({
+      action: 'TOPLU_MALZEME_GÜNCELLEME',
+      module: 'MALZEME_YÖNETİMİ',
+      recordId: 'TOPLU_GÜNCELLEME',
+      details: `${materialIds.length} malzeme toplu güncellendi`,
+      performedBy: dataService.getCurrentUser().name,
+    });
+    
+    loadData();
+    setSelectedMaterials([]);
+    setShowSelectAll(false);
+    alert(`${materialIds.length} malzeme başarıyla güncellendi.`);
   };
 
   const handleDeleteMaterial = (id: string) => {
@@ -1626,6 +1949,26 @@ export default function MaterialManagement() {
     );
   };
 
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    
+    if (sortConfig && sortConfig.key === key) {
+      direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+    }
+    
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUp className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100" />;
+    }
+    
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUp className="h-3 w-3 text-blue-600" />
+      : <ArrowDown className="h-3 w-3 text-blue-600" />;
+  };
+
   const renderPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
@@ -1779,6 +2122,18 @@ export default function MaterialManagement() {
                     {selectedMaterials.length} malzeme seçildi
                   </span>
                 </div>
+                
+                {/* Sistem Yöneticisi için Toplu Düzenleme Butonu */}
+                {(currentUser.role === 'admin' || currentUser.permissions.manageMaterials) && (
+                  <button
+                    onClick={() => setShowBulkEditModal(true)}
+                    className="btn-modern text-sm"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                    <span>Toplu Düzenle (Fiyat/Stok)</span>
+                  </button>
+                )}
+                
                 <button
                   onClick={() => setShowStatusChangeModal(true)}
                   className="btn-modern text-sm"
@@ -1786,6 +2141,7 @@ export default function MaterialManagement() {
                   <Edit2 className="h-4 w-4" />
                   <span>Statü Değiştir</span>
                 </button>
+                
                 <button
                   onClick={() => {
                     setSelectedMaterials([]);
@@ -1834,101 +2190,185 @@ export default function MaterialManagement() {
                   </div>
                 </th>
                 
-                {/* Barkod */}
+                {/* Barkod - Sıralanabilir */}
                 <th style={{ width: '150px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Barkod</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('barcode')}
+                    >
+                      <span className="column-header-text">Barkod</span>
+                      {getSortIcon('barcode')}
+                    </button>
                   </div>
                 </th>
                 
                 {/* GTIN */}
                 <th style={{ width: '120px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">GTIN</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('gtin')}
+                    >
+                      <span className="column-header-text">GTIN</span>
+                      {getSortIcon('gtin')}
+                    </button>
                   </div>
                 </th>
                 
                 {/* SN */}
                 <th style={{ width: '120px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">SN</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('sn')}
+                    >
+                      <span className="column-header-text">SN</span>
+                      {getSortIcon('sn')}
+                    </button>
                   </div>
                 </th>
                 
                 {/* UDI Code */}
                 <th style={{ width: '120px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">UDI Code</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('udiCode')}
+                    >
+                      <span className="column-header-text">UDI Code</span>
+                      {getSortIcon('udiCode')}
+                    </button>
                   </div>
                 </th>
                 
                 {/* All Barcode */}
                 <th style={{ width: '140px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">All Barcode</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('allBarcode')}
+                    >
+                      <span className="column-header-text">All Barcode</span>
+                      {getSortIcon('allBarcode')}
+                    </button>
                   </div>
                 </th>
                 
-                {/* Malzeme Adı */}
+                {/* Malzeme Adı - Sıralanabilir */}
                 <th style={{ width: '200px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Malzeme</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('name')}
+                    >
+                      <span className="column-header-text">Malzeme</span>
+                      {getSortIcon('name')}
+                    </button>
                   </div>
                 </th>
                 
                 {/* Sezgisel Kod */}
                 <th style={{ width: '120px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Sezgisel Kod</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('intuitiveCode')}
+                    >
+                      <span className="column-header-text">Sezgisel Kod</span>
+                      {getSortIcon('intuitiveCode')}
+                    </button>
                   </div>
                 </th>
                 
-                {/* Statü */}
+                {/* Statü - Sıralanabilir */}
                 <th style={{ width: '100px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Statü</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('status')}
+                    >
+                      <span className="column-header-text">Statü</span>
+                      {getSortIcon('status')}
+                    </button>
                   </div>
                 </th>
                 
-                {/* Kategori */}
+                {/* Kategori - Sıralanabilir */}
                 <th style={{ width: '120px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Kategori</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('category')}
+                    >
+                      <span className="column-header-text">Kategori</span>
+                      {getSortIcon('category')}
+                    </button>
                   </div>
                 </th>
                 
                 {/* Alt Kategori */}
                 <th style={{ width: '120px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Alt Kategori</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('subCategory')}
+                    >
+                      <span className="column-header-text">Alt Kategori</span>
+                      {getSortIcon('subCategory')}
+                    </button>
                   </div>
                 </th>
                 
-                {/* Birim */}
+                {/* Birim - Sıralanabilir */}
                 <th style={{ width: '80px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Birim</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('unit')}
+                    >
+                      <span className="column-header-text">Birim</span>
+                      {getSortIcon('unit')}
+                    </button>
                   </div>
                 </th>
                 
-                {/* Birim Fiyat */}
+                {/* Birim Fiyat - Sıralanabilir */}
                 <th style={{ width: '100px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Birim Fiyat</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('unitPrice')}
+                    >
+                      <span className="column-header-text">Birim Fiyat</span>
+                      {getSortIcon('unitPrice')}
+                    </button>
                   </div>
                 </th>
                 
-                {/* Mevcut Stok */}
+                {/* Mevcut Stok - Sıralanabilir */}
                 <th style={{ width: '100px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Mevcut Stok</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('currentStock')}
+                    >
+                      <span className="column-header-text">Mevcut Stok</span>
+                      {getSortIcon('currentStock')}
+                    </button>
                   </div>
                 </th>
                 
-                {/* Kritik Stok */}
+                {/* Kritik Stok - Sıralanabilir */}
                 <th style={{ width: '100px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Kritik Stok</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('minStock')}
+                    >
+                      <span className="column-header-text">Kritik Stok</span>
+                      {getSortIcon('minStock')}
+                    </button>
                   </div>
                 </th>
                 
@@ -1939,31 +2379,55 @@ export default function MaterialManagement() {
                   </div>
                 </th>
                 
-                {/* Tedarikçi */}
+                {/* Tedarikçi - Sıralanabilir */}
                 <th style={{ width: '150px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Tedarikçi</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('supplier')}
+                    >
+                      <span className="column-header-text">Tedarikçi</span>
+                      {getSortIcon('supplier')}
+                    </button>
                   </div>
                 </th>
                 
-                {/* SKT */}
+                {/* SKT - Sıralanabilir */}
                 <th style={{ width: '100px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">SKT</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('expirationDate')}
+                    >
+                      <span className="column-header-text">SKT</span>
+                      {getSortIcon('expirationDate')}
+                    </button>
                   </div>
                 </th>
                 
                 {/* Seri No Durumu */}
                 <th style={{ width: '140px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Seri No Durumu</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('serialNoStatus')}
+                    >
+                      <span className="column-header-text">Seri No Durumu</span>
+                      {getSortIcon('serialNoStatus')}
+                    </button>
                   </div>
                 </th>
                 
                 {/* Malzeme Açıklama */}
                 <th style={{ width: '200px' }}>
                   <div className="column-header">
-                    <span className="column-header-text">Açıklama</span>
+                    <button 
+                      className="column-header-button group"
+                      onClick={() => handleSort('materialDescription')}
+                    >
+                      <span className="column-header-text">Açıklama</span>
+                      {getSortIcon('materialDescription')}
+                    </button>
                   </div>
                 </th>
                 
@@ -2280,12 +2744,12 @@ export default function MaterialManagement() {
               className="page-size-selector"
               value={itemsPerPage}
               onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
                 setCurrentPage(1);
-                // itemsPerPage state'ini güncellemek için props eklemeniz gerekebilir
               }}
             >
               <option value="10">10</option>
-              <option value="25">25</option>
+              <option value="20">20</option>
               <option value="50">50</option>
               <option value="100">100</option>
             </select>
@@ -2344,6 +2808,14 @@ export default function MaterialManagement() {
           selectedMaterials={materials.filter(m => selectedMaterials.includes(m.id))}
           onStatusChange={handleBulkStatusChange}
           onClose={() => setShowStatusChangeModal(false)}
+        />
+      )}
+
+      {showBulkEditModal && (
+        <BulkEditModal
+          selectedMaterials={materials.filter(m => selectedMaterials.includes(m.id))}
+          onSave={handleBulkUpdate}
+          onClose={() => setShowBulkEditModal(false)}
         />
       )}
     </div>

@@ -1,7 +1,7 @@
-// src/components/Layout.tsx - GÜNCELLENMİŞ VE TAM UYUMLU VERSİYON
+// src/components/Layout.tsx - GÜNCELLENMİŞ VERSİYON (Yetkilere göre menü)
 import React, { ReactNode, useState, useEffect, useCallback } from 'react';
 import { 
-  Eye as Hospital, 
+  Home as AnaSayfaIcon,
   Package, 
   Users, 
   FileText, 
@@ -13,7 +13,6 @@ import {
   CheckSquare,
   Menu,
   X,
-  Home,
   User,
   Search,
   ChevronDown,
@@ -22,27 +21,20 @@ import {
   Power,
   Settings,
   Shield,
-  Activity
+  Activity,
+  Eye as Hospital,
+  Stethoscope,
+  Calendar,
+  Utensils
 } from 'lucide-react';
 import { dataService } from '../utils/dataService';
 import { DashboardStats, User as UserType, MaterialStatus, SystemLog } from '../types';
+import { useAuth } from '../components/AuthContext.tsx';
 
 interface LayoutProps {
   currentPage: string;
   onPageChange: (page: string) => void;
-  user: UserType;
-  onLogout: () => void;
   children: ReactNode;
-}
-
-interface Notification {
-  id: string;
-  type: 'warning' | 'info' | 'success' | 'error';
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  link: string;
 }
 
 // Statü kartı component'ı
@@ -114,89 +106,35 @@ const StatusCard: React.FC<{
   );
 };
 
-// Bildirim öğesi component'ı
-const NotificationItem: React.FC<{
-  notification: Notification;
-  onClick: (id: string, link: string) => void;
-}> = ({ notification, onClick }) => {
-  const getIcon = () => {
-    switch (notification.type) {
-      case 'warning': return <AlertTriangle className="h-5 w-5" />;
-      case 'success': return <CheckSquare className="h-5 w-5" />;
-      case 'error': return <AlertTriangle className="h-5 w-5" />;
-      default: return <Bell className="h-5 w-5" />;
-    }
-  };
-
-  const getIconColor = () => {
-    switch (notification.type) {
-      case 'warning': return 'bg-orange-100 text-orange-600';
-      case 'success': return 'bg-green-100 text-green-600';
-      case 'error': return 'bg-red-100 text-red-600';
-      default: return 'bg-blue-100 text-blue-600';
-    }
-  };
-
-  return (
-    <div
-      onClick={() => onClick(notification.id, notification.link)}
-      className={`px-4 py-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors ${
-        notification.read ? 'opacity-70' : 'bg-blue-50'
-      }`}
-    >
-      <div className="flex items-start space-x-3">
-        <div className={`p-2 rounded-full ${getIconColor()}`}>
-          {getIcon()}
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <p className="font-semibold text-gray-900">
-              {notification.title}
-            </p>
-            {!notification.read && (
-              <div className="h-2 w-2 rounded-full bg-orange-500"></div>
-            )}
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            {notification.message}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
-            {notification.time}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Sol Menü Component'i
 const SideMenu: React.FC<{
   currentPage: string;
   onPageChange: (page: string) => void;
-  user: UserType;
-}> = ({ currentPage, onPageChange, user }) => {
+}> = ({ currentPage, onPageChange }) => {
   const [showUserSection, setShowUserSection] = useState(false);
+  const { user, canViewPage, getRoleDisplayName } = useAuth();
   
-  const menuItems = [
-    { id: 'dashboard', label: 'Ana Sayfa', icon: <Home className="h-5 w-5" />, permission: 'viewDashboard' },
-    { id: 'materials', label: 'Malzeme', icon: <Package className="h-5 w-5" />, permission: 'manageMaterials' },
-    { id: 'stock-count', label: 'Stok Takip', icon: <ClipboardList className="h-5 w-5" />, permission: 'manageMaterials' },
-    { id: 'patients', label: 'Hasta', icon: <Users className="h-5 w-5" />, permission: 'managePatients' },
-    { id: 'invoices', label: 'Fatura', icon: <FileText className="h-5 w-5" />, permission: 'manageInvoices' },
-    { id: 'reports', label: 'Raporlar', icon: <BarChart3 className="h-5 w-5" />, permission: 'viewReports' },
+  // MENÜ ÖĞELERİ - Yetkilere göre filtrelenecek
+  const allMenuItems = [
+    { id: 'dashboard', label: 'Anasayfa', icon: <AnaSayfaIcon className="h-5 w-5" /> },
+    { id: 'materials', label: 'Malzeme', icon: <Package className="h-5 w-5" /> },
+    { id: 'stock-count', label: 'Stok Takip', icon: <ClipboardList className="h-5 w-5" /> },
+    { id: 'patients', label: 'Hasta', icon: <Users className="h-5 w-5" /> },
+    { id: 'invoices', label: 'Fatura', icon: <FileText className="h-5 w-5" /> },
+    { id: 'reports', label: 'Raporlar', icon: <BarChart3 className="h-5 w-5" /> },
+    { id: 'users', label: 'Kullanıcılar', icon: <UserCheck className="h-5 w-5" /> },
+    { id: 'doctors', label: 'Doktorlar', icon: <Stethoscope className="h-5 w-5" /> },
+    { id: 'daily-plan', label: 'Günlük Plan', icon: <Calendar className="h-5 w-5" /> },
   ];
 
-  // Kullanıcı yönetimi sadece admin için
-  if (user?.permissions?.manageUsers) {
-    menuItems.push({ id: 'users', label: 'Kullanıcılar', icon: <User className="h-5 w-5" />, permission: 'manageUsers' });
-  }
-
-  const filteredMenuItems = menuItems.filter(item => 
-    !item.permission || user?.permissions?.[item.permission as keyof UserType['permissions']]
+  // Kullanıcının yetkisine göre menüyü filtrele
+  const filteredMenuItems = allMenuItems.filter(item => 
+    canViewPage(item.id)
   );
 
-  // Son Aktiviteler - Sadece Admin için
+  // Son Aktiviteler - Sadece Admin ve Yönetici için
   const recentActivities = dataService.getLogs().slice(0, 5);
+  const canViewActivities = user?.role === 'admin' || user?.role === 'manager';
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-[#0F1B5D] to-[#1E3A8A] text-white">
@@ -224,7 +162,7 @@ const SideMenu: React.FC<{
           </div>
           <div className="flex-1">
             <p className="font-semibold text-white">{user?.name}</p>
-            <p className="text-sm text-orange-300 capitalize">{user?.role}</p>
+            <p className="text-sm text-orange-300">{getRoleDisplayName()}</p>
           </div>
           <button 
             onClick={() => setShowUserSection(!showUserSection)}
@@ -293,8 +231,8 @@ const SideMenu: React.FC<{
         </div>
       </div>
 
-      {/* Son Aktiviteler - Sadece Admin için */}
-      {user?.permissions?.manageUsers && (
+      {/* Son Aktiviteler - Sadece Admin ve Yönetici için */}
+      {canViewActivities && (
         <div className="p-4 border-t border-blue-800">
           <h3 className="font-semibold text-orange-400 mb-3 flex items-center">
             <Clock className="h-4 w-4 mr-2" />
@@ -317,7 +255,7 @@ const SideMenu: React.FC<{
   );
 };
 
-export default function Layout({ children, currentPage, onPageChange, user, onLogout }: LayoutProps) {
+export default function Layout({ children, currentPage, onPageChange }: LayoutProps) {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalMaterials: 0,
     totalPatients: 0,
@@ -367,7 +305,9 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  const { user, logout, getRoleDisplayName } = useAuth();
 
   useEffect(() => {
     loadDashboardStats();
@@ -392,7 +332,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
       .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
       .slice(0, 5);
 
-    const newNotifications: Notification[] = [];
+    const newNotifications: any[] = [];
 
     // Kritik stok bildirimleri
     criticalMaterials.forEach(material => {
@@ -485,7 +425,6 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
         <SideMenu 
           currentPage={currentPage}
           onPageChange={onPageChange}
-          user={user}
         />
       </div>
 
@@ -525,13 +464,15 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
               <div className="hidden lg:flex flex-1 justify-center">
                 <div className="bg-blue-800/50 backdrop-blur-sm px-6 py-2 rounded-full border border-blue-700/50">
                   <h2 className="text-lg font-semibold text-white text-center">
-                    {currentPage === 'dashboard' && 'Ana Sayfa'}
+                    {currentPage === 'dashboard' && 'Anasayfa'}
                     {currentPage === 'materials' && 'Malzeme Yönetimi'}
                     {currentPage === 'stock-count' && 'Stok Takip'}
                     {currentPage === 'patients' && 'Hasta Yönetimi'}
                     {currentPage === 'invoices' && 'Fatura Yönetimi'}
                     {currentPage === 'reports' && 'Raporlar'}
                     {currentPage === 'users' && 'Kullanıcı Yönetimi'}
+                    {currentPage === 'doctors' && 'Doktorlar'}
+                    {currentPage === 'daily-plan' && 'Günlük Plan'}
                   </h2>
                 </div>
               </div>
@@ -541,13 +482,15 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                 {/* Mobil Sayfa Başlığı */}
                 <div className="lg:hidden text-center">
                   <h2 className="text-sm font-semibold text-white">
-                    {currentPage === 'dashboard' && 'Ana Sayfa'}
+                    {currentPage === 'dashboard' && 'Anasayfa'}
                     {currentPage === 'materials' && 'Malzeme'}
                     {currentPage === 'stock-count' && 'Stok'}
                     {currentPage === 'patients' && 'Hasta'}
                     {currentPage === 'invoices' && 'Fatura'}
                     {currentPage === 'reports' && 'Raporlar'}
                     {currentPage === 'users' && 'Kullanıcılar'}
+                    {currentPage === 'doctors' && 'Doktorlar'}
+                    {currentPage === 'daily-plan' && 'Günlük Plan'}
                   </h2>
                 </div>
                 
@@ -597,11 +540,43 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                       <div className="max-h-[60vh] overflow-y-auto">
                         {notifications.length > 0 ? (
                           notifications.map((notification) => (
-                            <NotificationItem
+                            <div
                               key={notification.id}
-                              notification={notification}
-                              onClick={handleNotificationClick}
-                            />
+                              onClick={() => handleNotificationClick(notification.id, notification.link)}
+                              className={`px-4 py-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                notification.read ? 'opacity-70' : 'bg-blue-50'
+                              }`}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <div className={`p-2 rounded-full ${
+                                  notification.type === 'warning' ? 'bg-orange-100 text-orange-600' :
+                                  notification.type === 'success' ? 'bg-green-100 text-green-600' :
+                                  notification.type === 'error' ? 'bg-red-100 text-red-600' :
+                                  'bg-blue-100 text-blue-600'
+                                }`}>
+                                  {notification.type === 'warning' ? <AlertTriangle className="h-5 w-5" /> :
+                                   notification.type === 'success' ? <CheckSquare className="h-5 w-5" /> :
+                                   notification.type === 'error' ? <AlertTriangle className="h-5 w-5" /> :
+                                   <Bell className="h-5 w-5" />}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-semibold text-gray-900">
+                                      {notification.title}
+                                    </p>
+                                    {!notification.read && (
+                                      <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-2">
+                                    {notification.time}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
                           ))
                         ) : (
                           <div className="px-4 py-8 text-center">
@@ -642,7 +617,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                     </div>
                     <div className="text-left hidden lg:block">
                       <p className="text-sm font-semibold text-white">{user?.name}</p>
-                      <p className="text-xs text-orange-300 capitalize">{user?.role}</p>
+                      <p className="text-xs text-orange-300">{getRoleDisplayName()}</p>
                     </div>
                   </button>
                   
@@ -656,7 +631,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                             {user?.department}
                           </span>
                           <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full capitalize">
-                            {user?.role}
+                            {getRoleDisplayName()}
                           </span>
                         </div>
                       </div>
@@ -668,22 +643,12 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                           }}
                           className="w-full px-4 py-2 text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors flex items-center space-x-3"
                         >
-                          <Home className="h-4 w-4 text-gray-500" />
-                          <span>Ana Sayfa</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowUserMenu(false);
-                            // Profil sayfası eklenecek
-                          }}
-                          className="w-full px-4 py-2 text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors flex items-center space-x-3"
-                        >
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span>Profilim</span>
+                          <AnaSayfaIcon className="h-4 w-4 text-gray-500" />
+                          <span>Anasayfa</span>
                         </button>
                         <div className="border-t border-gray-200 my-2"></div>
                         <button
-                          onClick={onLogout}
+                          onClick={logout}
                           className="w-full px-4 py-2 text-left font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors flex items-center space-x-3"
                         >
                           <LogOut className="h-4 w-4" />
@@ -712,7 +677,6 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                   onPageChange(page);
                   setShowMobileMenu(false);
                 }}
-                user={user}
               />
             </div>
           </div>
@@ -746,7 +710,7 @@ export default function Layout({ children, currentPage, onPageChange, user, onLo
                   Kullanıcı: {user?.name}
                 </span>
                 <span className="px-2 py-0.5 bg-orange-900/50 text-orange-300 text-xs rounded-full capitalize">
-                  Rol: {user?.role}
+                  Rol: {getRoleDisplayName()}
                 </span>
               </div>
             </div>

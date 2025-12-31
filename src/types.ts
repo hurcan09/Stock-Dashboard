@@ -479,8 +479,6 @@ export interface SessionSummary {
   correctionCount?: number;
 }
 
-// Types.ts dosyasında DashboardStats interface'ini şöyle güncelleyin:
-
 export interface DashboardStats {
   totalMaterials: number;
   totalPatients: number;

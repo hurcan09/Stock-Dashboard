@@ -1,4 +1,4 @@
-// src/components/UserManagement.tsx - TAM GÜNCELLENMİŞ VERSİYON
+// src/components/UserManagement.tsx - GÜNCELLENMİŞ VERSİYON
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users,
@@ -43,10 +43,53 @@ const InfoIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+// Benzersiz kullanıcıları son giriş tarihine göre filtreleme fonksiyonu
+const getUniqueUsersByLastLogin = (users: User[]): User[] => {
+  const uniqueUsers = new Map<string, User>();
+  
+  users.forEach(user => {
+    const existingUser = uniqueUsers.get(user.email);
+    if (!existingUser || (user.lastLogin && (!existingUser.lastLogin || new Date(user.lastLogin) > new Date(existingUser.lastLogin)))) {
+      uniqueUsers.set(user.email, user);
+    }
+  });
+  
+  return Array.from(uniqueUsers.values());
+};
+
+// Son giriş zamanını formatlayan fonksiyon
+const formatLastLogin = (dateString?: string | Date): string => {
+  if (!dateString) return 'Hiç giriş yapmadı';
+  
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffMins < 1) {
+    return 'Az önce';
+  } else if (diffMins < 60) {
+    return `${diffMins} dakika önce`;
+  } else if (diffHours < 24) {
+    return `${diffHours} saat önce`;
+  } else if (diffDays < 7) {
+    return `${diffDays} gün önce`;
+  } else {
+    return date.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }
+};
+
 // User Management Component
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [uniqueFilteredUsers, setUniqueFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -104,6 +147,7 @@ export default function UserManagement() {
       const allUsers = dataService.getUsers();
       setUsers(allUsers);
       setFilteredUsers(allUsers);
+      setUniqueFilteredUsers(getUniqueUsersByLastLogin(allUsers));
       
       const sessions = dataService.getUserSessions();
       setActiveSessions(sessions.filter(s => s.isActive));
@@ -148,6 +192,7 @@ export default function UserManagement() {
     }
     
     setFilteredUsers(result);
+    setUniqueFilteredUsers(getUniqueUsersByLastLogin(result));
   }, [users, searchTerm, filterRole, filterStatus]);
 
   // Kullanıcı ekleme
@@ -386,10 +431,10 @@ export default function UserManagement() {
   };
 
   const handleSelectAll = () => {
-    if (selectedUsers.length === filteredUsers.length) {
+    if (selectedUsers.length === uniqueFilteredUsers.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(filteredUsers.map(user => user.id));
+      setSelectedUsers(uniqueFilteredUsers.map(user => user.id));
     }
   };
 
@@ -470,12 +515,16 @@ export default function UserManagement() {
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-center">
-              <div className="text-2xl font-bold">{users.length}</div>
-              <div className="text-sm text-blue-300">Toplam Kullanıcı</div>
+              <div className="text-2xl font-bold">{uniqueFilteredUsers.length}</div>
+              <div className="text-sm text-blue-300">Benzersiz Kullanıcı</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold">{activeSessions.length}</div>
               <div className="text-sm text-blue-300">Aktif Oturum</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold">{users.length}</div>
+              <div className="text-sm text-blue-300">Toplam Kayıt</div>
             </div>
           </div>
         </div>
@@ -567,6 +616,17 @@ export default function UserManagement() {
           </div>
         )}
 
+        {/* Benzersiz Kullanıcı Bilgisi */}
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center text-sm text-blue-700">
+            <Info className="h-4 w-4 mr-2" />
+            <span>
+              Tabloda kullanıcılar e-posta adreslerine göre benzersiz olarak gösterilmektedir. 
+              Her kullanıcı için en son giriş tarihi görüntülenir.
+            </span>
+          </div>
+        </div>
+
         {/* Kullanıcı Listesi */}
         <div className="overflow-x-auto rounded-xl border border-gray-200">
           <table className="w-full">
@@ -575,7 +635,7 @@ export default function UserManagement() {
                 <th className="py-4 px-6 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                    checked={selectedUsers.length === uniqueFilteredUsers.length && uniqueFilteredUsers.length > 0}
                     onChange={handleSelectAll}
                     className="h-4 w-4 text-orange-600 rounded"
                   />
@@ -589,7 +649,7 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredUsers.map((user) => (
+              {uniqueFilteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                   <td className="py-4 px-6">
                     <input
@@ -647,12 +707,18 @@ export default function UserManagement() {
                   </td>
                   <td className="py-4 px-6">
                     <div className="text-sm">
-                      <div className="text-gray-900">
-                        {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('tr-TR') : 'Hiç giriş yapmadı'}
+                      <div className="text-gray-900 font-medium">
+                        {formatLastLogin(user.lastLogin)}
                       </div>
                       {user.lastLogin && (
-                        <div className="text-xs text-gray-500">
-                          {new Date(user.lastLogin).toLocaleTimeString('tr-TR')}
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(user.lastLogin).toLocaleDateString('tr-TR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </div>
                       )}
                     </div>
@@ -694,7 +760,7 @@ export default function UserManagement() {
             </tbody>
           </table>
 
-          {filteredUsers.length === 0 && (
+          {uniqueFilteredUsers.length === 0 && (
             <div className="text-center py-12">
               <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-700 font-medium">Kullanıcı bulunamadı</p>
@@ -758,7 +824,7 @@ export default function UserManagement() {
                 <div className="mt-3 text-xs text-gray-500">
                   <span>IP: {session.ipAddress}</span>
                   <span className="mx-2">•</span>
-                  <span>Giriş: {new Date(session.loginTime).toLocaleTimeString('tr-TR')}</span>
+                  <span>Giriş: {formatLastLogin(session.loginTime)}</span>
                 </div>
               </div>
             ))}
@@ -795,7 +861,7 @@ export default function UserManagement() {
                       {log.action}
                     </span>
                     <p className="text-xs text-gray-500 mt-1">
-                      {new Date(log.performedAt).toLocaleTimeString('tr-TR')}
+                      {formatLastLogin(log.performedAt)}
                     </p>
                   </div>
                 </div>
