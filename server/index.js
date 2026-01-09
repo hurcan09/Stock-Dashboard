@@ -1,3 +1,4 @@
+// server/index.cjs - CommonJS formatında (DEĞİŞMEDEN)
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
@@ -41,7 +42,6 @@ app.use(express.static(path.join(__dirname, '../dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
-
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`API sunucusu http://localhost:${PORT} adresinde çalışıyor.`);
