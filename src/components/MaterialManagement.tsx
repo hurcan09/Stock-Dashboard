@@ -8,7 +8,7 @@ import {
   RefreshCw, Save, Star, Shield, Lock, Unlock,
   BarChart3, TrendingUp, TrendingDown, PackageOpen,
   Layers, Grid3X3, List, Grid, Menu, MoreHorizontal,
-  ArrowUp, ArrowDown
+  ArrowUp, ArrowDown, Tag, Truck
 } from 'lucide-react';
 import { Material, Category, Supplier, StockCount, StockCountSession, MaterialStatus } from '../types';
 import { dataService } from '../utils/dataService';
@@ -144,6 +144,223 @@ function BarcodeScannerModal({ onScan, onClose }: { onScan: (barcode: string) =>
   );
 }
 
+// Kategori Ekleme Modalı
+function AddCategoryModal({ onSave, onClose }: { onSave: () => void; onClose: () => void }) {
+  const [categoryName, setCategoryName] = useState('');
+  const [description, setDescription] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryName.trim()) {
+      alert('Lütfen kategori adı giriniz!');
+      return;
+    }
+
+    const newCategory: Omit<Category, 'id'> = {
+      name: categoryName.trim(),
+      description: description.trim(),
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+
+    dataService.saveCategory(newCategory);
+    onSave();
+    onClose();
+    alert('Kategori başarıyla eklendi!');
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-md mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Yeni Kategori Ekle</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kategori Adı *
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+                placeholder="Kategori adını girin"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Açıklama
+              </label>
+              <textarea
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Kategori açıklaması (isteğe bağlı)"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+              >
+                Kategori Ekle
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Tedarikçi Ekleme Modalı
+function AddSupplierModal({ onSave, onClose }: { onSave: () => void; onClose: () => void }) {
+  const [supplierName, setSupplierName] = useState('');
+  const [contactPerson, setContactPerson] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supplierName.trim()) {
+      alert('Lütfen tedarikçi adı giriniz!');
+      return;
+    }
+
+    const newSupplier: Omit<Supplier, 'id'> = {
+      name: supplierName.trim(),
+      contactPerson: contactPerson.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+
+    dataService.saveSupplier(newSupplier);
+    onSave();
+    onClose();
+    alert('Tedarikçi başarıyla eklendi!');
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-md mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Yeni Tedarikçi Ekle</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tedarikçi Adı *
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={supplierName}
+                onChange={(e) => setSupplierName(e.target.value)}
+                placeholder="Tedarikçi adını girin"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Yetkili Kişi
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={contactPerson}
+                onChange={(e) => setContactPerson(e.target.value)}
+                placeholder="Yetkili kişi adı"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Telefon
+              </label>
+              <input
+                type="tel"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Telefon numarası"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                E-posta
+              </label>
+              <input
+                type="email"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="E-posta adresi"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Adres
+              </label>
+              <textarea
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Adres"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+              >
+                Tedarikçi Ekle
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Toplu Düzenleme Modal Component - Sistem Yöneticisi için
 function BulkEditModal({ 
   selectedMaterials, 
@@ -195,8 +412,6 @@ function BulkEditModal({
   const parseValue = (field: string, value: string) => {
     switch (field) {
       case 'unitPrice':
-      case 'currentStock':
-      case 'minStock':
         return parseFloat(value);
       case 'currentStock':
       case 'minStock':
@@ -588,15 +803,16 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
             <div className="grid grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Kategori
+                  Kategori *
                 </label>
                 <div className="flex space-x-2">
                   <select
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    required
                   >
-                    <option value="">Kategori seçin</option>
+                    <option value="">Kategori seçin *</option>
                     {categories.map(cat => (
                       <option key={cat.id} value={cat.name}>{cat.name}</option>
                     ))}
@@ -650,15 +866,16 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tedarikçi
+                  Tedarikçi *
                 </label>
                 <div className="flex space-x-2">
                   <select
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     value={formData.supplier}
                     onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                    required
                   >
-                    <option value="">Tedarikçi seçin</option>
+                    <option value="">Tedarikçi seçin *</option>
                     {suppliers.map(sup => (
                       <option key={sup.id} value={sup.name}>{sup.name}</option>
                     ))}
@@ -700,13 +917,15 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Birim
+                  Birim *
                 </label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   value={formData.unit}
                   onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  required
                 >
+                  <option value="">Birim seçin *</option>
                   {units.map(unit => (
                     <option key={unit} value={unit}>{unit}</option>
                   ))}
@@ -718,11 +937,12 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
             <div className="grid grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mevcut Stok
+                  Mevcut Stok *
                 </label>
                 <input
                   type="number"
                   min="0"
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   value={formData.currentStock}
                   onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
@@ -731,11 +951,12 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Kritik Stok
+                  Kritik Stok *
                 </label>
                 <input
                   type="number"
                   min="0"
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   value={formData.minStock}
                   onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
@@ -744,12 +965,13 @@ function QuickEditModal({ material, onSave, onClose }: { material: Material; onS
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Birim Fiyat (₺)
+                  Birim Fiyat (₺) *
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   value={formData.unitPrice}
                   onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
@@ -1573,12 +1795,870 @@ function StatusChangeModal({
   );
 }
 
+// Yeni Malzeme Ekleme Modalı - Güncellenmiş (Kaydırma Çubuğu Sağda)
+function NewMaterialModal({ onSave, onClose }: { onSave: (material: any) => void; onClose: () => void }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    barcode: '',
+    gtin: '',
+    sn: '',
+    udiCode: '',
+    allBarcode: '',
+    category: '',
+    subCategory: '',
+    unit: '',
+    unitPrice: 0,
+    currentStock: 0,
+    minStock: 0,
+    supplier: '',
+    expirationDate: '',
+    serialNoStatus: '',
+    materialDescription: '',
+    intuitiveCode: '',
+    status: 'normal' as MaterialStatus
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [newSupplier, setNewSupplier] = useState('');
+
+  const units = ['adet', 'kutu', 'şişe', 'tüp', 'paket', 'ampul', 'kg', 'lt', 'metre'];
+  const statusOptions: MaterialStatus[] = ['normal', 'konsinye', 'iade', 'faturalı'];
+
+  useEffect(() => {
+    setCategories(dataService.getCategories());
+    setSuppliers(dataService.getSuppliers());
+  }, []);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) newErrors.name = 'Malzeme adı zorunludur';
+    if (!formData.barcode.trim()) newErrors.barcode = 'Barkod zorunludur';
+    if (!formData.category) newErrors.category = 'Kategori zorunludur';
+    if (!formData.supplier) newErrors.supplier = 'Tedarikçi zorunludur';
+    if (!formData.unit) newErrors.unit = 'Birim zorunludur';
+    if (formData.unitPrice <= 0) newErrors.unitPrice = 'Geçerli bir fiyat giriniz';
+    if (formData.currentStock < 0) newErrors.currentStock = 'Stok 0\'dan küçük olamaz';
+    if (formData.minStock < 0) newErrors.minStock = 'Kritik stok 0\'dan küçük olamaz';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    onSave(formData);
+  };
+
+  const handleBarcodeScan = (barcode: string) => {
+    setFormData({ ...formData, barcode });
+    setShowBarcodeScanner(false);
+  };
+
+  const handleAddCategory = () => {
+    if (newCategory.trim()) {
+      const newCat: Omit<Category, 'id'> = {
+        name: newCategory.trim(),
+        description: '',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      dataService.saveCategory(newCat);
+      setCategories(dataService.getCategories());
+      setFormData({ ...formData, category: newCategory.trim() });
+      setNewCategory('');
+    }
+  };
+
+  const handleAddSupplier = () => {
+    if (newSupplier.trim()) {
+      const newSup: Omit<Supplier, 'id'> = {
+        name: newSupplier.trim(),
+        contactPerson: '',
+        email: '',
+        phone: '',
+        address: '',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      dataService.saveSupplier(newSup);
+      setSuppliers(dataService.getSuppliers());
+      setFormData({ ...formData, supplier: newSupplier.trim() });
+      setNewSupplier('');
+    }
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData({ ...formData, [field]: value });
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: '' });
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-6xl mx-4 max-h-[90vh] overflow-hidden flex">
+        {/* Sol Alan: Form İçeriği - Kaydırılabilir */}
+        <div className="flex-1 flex flex-col">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold">Yeni Malzeme Ekle</h3>
+              <button 
+                onClick={onClose} 
+                className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Zorunlu Alanlar - Grid */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-800 mb-4 flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  Zorunlu Alanlar
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Malzeme Adı */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Malzeme Adı *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                        errors.name ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                    />
+                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                  </div>
+
+                  {/* Barkod */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Barkod *
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        required
+                        className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                          errors.barcode ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        value={formData.barcode}
+                        onChange={(e) => handleInputChange('barcode', e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowBarcodeScanner(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
+                        title="Barkod Tara"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {errors.barcode && <p className="text-red-500 text-xs mt-1">{errors.barcode}</p>}
+                  </div>
+
+                  {/* Kategori */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kategori *
+                    </label>
+                    <div className="space-y-2">
+                      <div className="flex space-x-2">
+                        <select
+                          className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                            errors.category ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          value={formData.category}
+                          onChange={(e) => handleInputChange('category', e.target.value)}
+                          required
+                        >
+                          <option value="">Kategori seçin *</option>
+                          {categories.map(category => (
+                            <option key={category.id} value={category.name}>{category.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                          value={newCategory}
+                          onChange={(e) => setNewCategory(e.target.value)}
+                          placeholder="Yeni kategori adı"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddCategory}
+                          className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                        >
+                          Ekle
+                        </button>
+                      </div>
+                    </div>
+                    {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
+                  </div>
+
+                  {/* Tedarikçi */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tedarikçi *
+                    </label>
+                    <div className="space-y-2">
+                      <div className="flex space-x-2">
+                        <select
+                          className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                            errors.supplier ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          value={formData.supplier}
+                          onChange={(e) => handleInputChange('supplier', e.target.value)}
+                          required
+                        >
+                          <option value="">Tedarikçi seçin *</option>
+                          {suppliers.map(supplier => (
+                            <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                          value={newSupplier}
+                          onChange={(e) => setNewSupplier(e.target.value)}
+                          placeholder="Yeni tedarikçi adı"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddSupplier}
+                          className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                        >
+                          Ekle
+                        </button>
+                      </div>
+                    </div>
+                    {errors.supplier && <p className="text-red-500 text-xs mt-1">{errors.supplier}</p>}
+                  </div>
+
+                  {/* Birim */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Birim *
+                    </label>
+                    <select
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                        errors.unit ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      value={formData.unit}
+                      onChange={(e) => handleInputChange('unit', e.target.value)}
+                      required
+                    >
+                      <option value="">Birim seçin *</option>
+                      {units.map(unit => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                    </select>
+                    {errors.unit && <p className="text-red-500 text-xs mt-1">{errors.unit}</p>}
+                  </div>
+
+                  {/* Birim Fiyat */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Birim Fiyat (₺) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      required
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                        errors.unitPrice ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      value={formData.unitPrice}
+                      onChange={(e) => handleInputChange('unitPrice', Number(e.target.value))}
+                    />
+                    {errors.unitPrice && <p className="text-red-500 text-xs mt-1">{errors.unitPrice}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stok Bilgileri */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-4 flex items-center">
+                  <Package className="h-5 w-5 mr-2" />
+                  Stok Bilgileri
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Mevcut Stok *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                        errors.currentStock ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      value={formData.currentStock}
+                      onChange={(e) => handleInputChange('currentStock', Number(e.target.value))}
+                    />
+                    {errors.currentStock && <p className="text-red-500 text-xs mt-1">{errors.currentStock}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kritik Stok *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                        errors.minStock ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      value={formData.minStock}
+                      onChange={(e) => handleInputChange('minStock', Number(e.target.value))}
+                    />
+                    {errors.minStock && <p className="text-red-500 text-xs mt-1">{errors.minStock}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* İsteğe Bağlı Alanlar */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-4 flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  İsteğe Bağlı Alanlar
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* GTIN */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      GTIN
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.gtin}
+                      onChange={(e) => handleInputChange('gtin', e.target.value)}
+                    />
+                  </div>
+
+                  {/* SN */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      SN
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.sn}
+                      onChange={(e) => handleInputChange('sn', e.target.value)}
+                    />
+                  </div>
+
+                  {/* UDI Code */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      UDI Code
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.udiCode}
+                      onChange={(e) => handleInputChange('udiCode', e.target.value)}
+                    />
+                  </div>
+
+                  {/* All Barcode */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      All Barcode
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.allBarcode}
+                      onChange={(e) => handleInputChange('allBarcode', e.target.value)}
+                    />
+                  </div>
+
+                  {/* Alt Kategori */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Alt Kategori
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.subCategory}
+                      onChange={(e) => handleInputChange('subCategory', e.target.value)}
+                    />
+                  </div>
+
+                  {/* SKT */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      SKT
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.expirationDate}
+                      onChange={(e) => handleInputChange('expirationDate', e.target.value)}
+                    />
+                  </div>
+
+                  {/* Seri No Durumu */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Seri No Durumu
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.serialNoStatus}
+                      onChange={(e) => handleInputChange('serialNoStatus', e.target.value)}
+                    />
+                  </div>
+
+                  {/* Sezgisel Kod */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sezgisel Kod
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.intuitiveCode}
+                      onChange={(e) => handleInputChange('intuitiveCode', e.target.value)}
+                    />
+                  </div>
+
+                  {/* Statü */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Statü
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.status}
+                      onChange={(e) => handleInputChange('status', e.target.value)}
+                    >
+                      {statusOptions.map(status => (
+                        <option key={status} value={status}>{status.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Malzeme Açıklama */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Malzeme Açıklama
+                    </label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={formData.materialDescription}
+                      onChange={(e) => handleInputChange('materialDescription', e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Sağ Alan: Kaydırma Çubuğu ve Butonlar */}
+        <div className="w-6 bg-gray-100 border-l border-gray-200">
+          {/* Kaydırma Çubuğu - Dikey */}
+          <div className="h-full flex items-center justify-center">
+            <div className="w-1.5 h-32 bg-gray-300 rounded-full"></div>
+          </div>
+        </div>
+
+        {/* Alt Butonlar */}
+        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Save className="h-5 w-5" />
+                <span>Malzeme Ekle</span>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 px-4 rounded-lg font-medium transition-all"
+            >
+              İptal
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showBarcodeScanner && (
+        <BarcodeScannerModal
+          onScan={handleBarcodeScan}
+          onClose={() => setShowBarcodeScanner(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Malzeme Modal Component
+interface MaterialModalProps {
+  material?: Material | null;
+  categories: Category[];
+  suppliers: Supplier[];
+  onSave: (material: any) => void;
+  onClose: () => void;
+}
+
+function MaterialModal({ material, categories, suppliers, onSave, onClose }: MaterialModalProps) {
+  const [formData, setFormData] = useState({
+    name: material?.name || '',
+    barcode: material?.barcode || '',
+    gtin: material?.gtin || '',
+    sn: material?.sn || '',
+    udiCode: material?.udiCode || '',
+    allBarcode: material?.allBarcode || '',
+    category: material?.category || '',
+    subCategory: material?.subCategory || '',
+    unit: material?.unit || 'adet',
+    unitPrice: material?.unitPrice || 0,
+    currentStock: material?.currentStock || 0,
+    minStock: material?.minStock || 0,
+    supplier: material?.supplier || '',
+    expirationDate: material?.expirationDate || '',
+    serialNoStatus: material?.serialNoStatus || '',
+    materialDescription: material?.materialDescription || '',
+    intuitiveCode: material?.intuitiveCode || '',
+    serialNumber: material?.serialNumber || '',
+    status: material?.status || 'normal',
+  });
+
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  const [newSupplier, setNewSupplier] = useState('');
+
+  const units = ['adet', 'kutu', 'şişe', 'tüp', 'paket', 'ampul', 'kg', 'lt', 'metre'];
+  const statusOptions: MaterialStatus[] = ['normal', 'konsinye', 'iade', 'faturalı'];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim()) {
+      alert('Lütfen malzeme adı giriniz!');
+      return;
+    }
+
+    if (!formData.barcode.trim()) {
+      formData.barcode = `AUTO_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    onSave(formData);
+  };
+
+  const handleBarcodeScan = (barcode: string) => {
+    setFormData({ ...formData, barcode });
+    setShowBarcodeScanner(false);
+  };
+
+  const handleAddCategory = () => {
+    if (newCategory.trim()) {
+      const newCat: Omit<Category, 'id'> = {
+        name: newCategory.trim(),
+        description: '',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      dataService.saveCategory(newCat);
+      setFormData({ ...formData, category: newCategory.trim() });
+      setNewCategory('');
+    }
+  };
+
+  const handleAddSupplier = () => {
+    if (newSupplier.trim()) {
+      const newSup: Omit<Supplier, 'id'> = {
+        name: newSupplier.trim(),
+        contactPerson: '',
+        email: '',
+        phone: '',
+        address: '',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      dataService.saveSupplier(newSup);
+      setFormData({ ...formData, supplier: newSupplier.trim() });
+      setNewSupplier('');
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-4xl mx-4">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold mb-4">
+            {material ? 'Malzeme Bilgilerini Düzenle' : 'Yeni Malzeme Ekle'}
+          </h3>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Malzeme Adı *
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="input-modern"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Barkod *
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    className="input-modern flex-1"
+                    value={formData.barcode}
+                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                    placeholder="Barkod giriniz"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowBarcodeScanner(true)}
+                    className="btn-modern"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <span>Tara</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kategori *
+                </label>
+                <div className="space-y-2">
+                  <div className="flex space-x-2">
+                    <select
+                      className="input-modern flex-1"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      required
+                    >
+                      <option value="">Kategori seçin *</option>
+                      {categories.map(category => (
+                        <option key={category.id} value={category.name}>{category.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="Yeni kategori adı"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCategory}
+                      className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                    >
+                      Ekle
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tedarikçi *
+                </label>
+                <div className="space-y-2">
+                  <div className="flex space-x-2">
+                    <select
+                      className="input-modern flex-1"
+                      value={formData.supplier}
+                      onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                      required
+                    >
+                      <option value="">Tedarikçi seçin *</option>
+                      {suppliers.map(supplier => (
+                        <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
+                      value={newSupplier}
+                      onChange={(e) => setNewSupplier(e.target.value)}
+                      placeholder="Yeni tedarikçi adı"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSupplier}
+                      className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                    >
+                      Ekle
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Birim *
+                </label>
+                <select
+                  className="input-modern"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  required
+                >
+                  <option value="">Birim seçin *</option>
+                  {units.map(unit => (
+                    <option key={unit} value={unit}>{unit}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mevcut Stok *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  className="input-modern"
+                  value={formData.currentStock}
+                  onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Birim Fiyat (₺) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  className="input-modern"
+                  value={formData.unitPrice}
+                  onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kritik Stok *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  className="input-modern"
+                  value={formData.minStock}
+                  onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Statü
+                </label>
+                <select
+                  className="input-modern"
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as MaterialStatus })}
+                >
+                  {statusOptions.map(status => (
+                    <option key={status} value={status}>{status.toUpperCase()}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                className="btn-modern flex-1"
+              >
+                {material ? 'Güncelle' : 'Ekle'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-modern-secondary flex-1"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+
+          {showBarcodeScanner && (
+            <BarcodeScannerModal
+              onScan={handleBarcodeScan}
+              onClose={() => setShowBarcodeScanner(false)}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MaterialManagement() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showNewMaterialModal, setShowNewMaterialModal] = useState(false);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [lowStockOnly, setLowStockOnly] = useState(false);
@@ -1606,9 +2686,17 @@ export default function MaterialManagement() {
   }, []);
 
   const loadData = () => {
-    setMaterials(dataService.getMaterials());
-    setCategories(dataService.getCategories());
-    setSuppliers(dataService.getSuppliers());
+    const loadedMaterials = dataService.getMaterials();
+    const loadedCategories = dataService.getCategories();
+    const loadedSuppliers = dataService.getSuppliers();
+    
+    console.log('Yüklenen malzemeler:', loadedMaterials.length);
+    console.log('Yüklenen kategoriler:', loadedCategories.length);
+    console.log('Yüklenen tedarikçiler:', loadedSuppliers.length);
+    
+    setMaterials(loadedMaterials);
+    setCategories(loadedCategories);
+    setSuppliers(loadedSuppliers);
   };
 
   const clearAllFilters = () => {
@@ -1699,35 +2787,52 @@ export default function MaterialManagement() {
   };
 
   const handleAddMaterial = (materialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'>) => {
-    dataService.saveMaterial(materialData);
+    console.log('Malzeme ekleniyor:', materialData);
     
-    dataService.logAction({
-      action: 'YENİ_MALZEME',
-      module: 'MALZEME_YÖNETİMİ',
-      recordId: materialData.barcode,
-      details: `${materialData.name} malzemesi eklendi - Barkod: ${materialData.barcode}`,
-      performedBy: dataService.getCurrentUser().name,
-    });
+    try {
+      dataService.saveMaterial(materialData);
+      
+      dataService.logAction({
+        action: 'YENİ_MALZEME',
+        module: 'MALZEME_YÖNETİMİ',
+        recordId: materialData.barcode,
+        details: `${materialData.name} malzemesi eklendi - Barkod: ${materialData.barcode}`,
+        performedBy: dataService.getCurrentUser().name,
+      });
 
-    loadData();
-    setShowAddModal(false);
+      loadData();
+      setShowAddModal(false);
+      setShowNewMaterialModal(false);
+      alert('Malzeme başarıyla eklendi!');
+    } catch (error) {
+      console.error('Malzeme ekleme hatası:', error);
+      alert('Malzeme eklenirken bir hata oluştu!');
+    }
   };
 
   const handleUpdateMaterial = (id: string, updates: Partial<Material>) => {
-    dataService.updateMaterial(id, updates);
+    console.log('Malzeme güncelleniyor:', id, updates);
     
-    const material = materials.find(m => m.id === id);
-    dataService.logAction({
-      action: 'MALZEME_GÜNCELLENDİ',
-      module: 'MALZEME_YÖNETİMİ',
-      recordId: material?.barcode || id,
-      details: `${material?.name} malzemesi güncellendi`,
-      performedBy: dataService.getCurrentUser().name,
-    });
+    try {
+      dataService.updateMaterial(id, updates);
+      
+      const material = materials.find(m => m.id === id);
+      dataService.logAction({
+        action: 'MALZEME_GÜNCELLENDİ',
+        module: 'MALZEME_YÖNETİMİ',
+        recordId: material?.barcode || id,
+        details: `${material?.name} malzemesi güncellendi`,
+        performedBy: dataService.getCurrentUser().name,
+      });
 
-    loadData();
-    setEditingMaterial(null);
-    setQuickEditMaterial(null);
+      loadData();
+      setEditingMaterial(null);
+      setQuickEditMaterial(null);
+      alert('Malzeme başarıyla güncellendi!');
+    } catch (error) {
+      console.error('Malzeme güncelleme hatası:', error);
+      alert('Malzeme güncellenirken bir hata oluştu!');
+    }
   };
 
   const handleBulkUpdate = (materialIds: string[], updates: { field: string; value: any }[]) => {
@@ -1756,17 +2861,23 @@ export default function MaterialManagement() {
   const handleDeleteMaterial = (id: string) => {
     const material = materials.find(m => m.id === id);
     if (confirm(`"${material?.name}" malzemesini silmek istediğinizden emin misiniz?`)) {
-      dataService.deleteMaterial(id);
-      
-      dataService.logAction({
-        action: 'MALZEME_SİLİNDİ',
-        module: 'MALZEME_YÖNETİMİ',
-        recordId: material?.barcode || id,
-        details: `${material?.name} malzemesi silindi - Barkod: ${material?.barcode}`,
-        performedBy: dataService.getCurrentUser().name,
-      });
+      try {
+        dataService.deleteMaterial(id);
+        
+        dataService.logAction({
+          action: 'MALZEME_SİLİNDİ',
+          module: 'MALZEME_YÖNETİMİ',
+          recordId: material?.barcode || id,
+          details: `${material?.name} malzemesi silindi - Barkod: ${material?.barcode}`,
+          performedBy: dataService.getCurrentUser().name,
+        });
 
-      loadData();
+        loadData();
+        alert('Malzeme başarıyla silindi!');
+      } catch (error) {
+        console.error('Malzeme silme hatası:', error);
+        alert('Malzeme silinirken bir hata oluştu!');
+      }
     }
   };
 
@@ -2014,6 +3125,24 @@ export default function MaterialManagement() {
         </div>
         
         <div className="flex items-center space-x-2">
+          {/* Kategori Ekle Butonu */}
+          <button
+            onClick={() => setShowAddCategoryModal(true)}
+            className="btn-modern-secondary text-sm"
+          >
+            <Tag className="h-4 w-4" />
+            <span>Kategori Ekle</span>
+          </button>
+          
+          {/* Tedarikçi Ekle Butonu */}
+          <button
+            onClick={() => setShowAddSupplierModal(true)}
+            className="btn-modern-secondary text-sm"
+          >
+            <Truck className="h-4 w-4" />
+            <span>Tedarikçi Ekle</span>
+          </button>
+          
           <button
             onClick={() => setShowExcelImport(true)}
             className="btn-modern-secondary text-sm"
@@ -2036,7 +3165,7 @@ export default function MaterialManagement() {
             <span>Barkod Tara</span>
           </button>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => setShowNewMaterialModal(true)}
             className="btn-modern text-sm"
           >
             <Plus className="h-4 w-4" />
@@ -2662,7 +3791,7 @@ export default function MaterialManagement() {
                       )}
                       {!searchTerm && selectedCategory === 'all' && !lowStockOnly && selectedStatus === 'all' && (
                         <button
-                          onClick={() => setShowAddModal(true)}
+                          onClick={() => setShowNewMaterialModal(true)}
                           className="btn-modern"
                         >
                           <Plus className="h-4 w-4 mr-2" />
@@ -2774,6 +3903,30 @@ export default function MaterialManagement() {
         />
       )}
 
+      {/* Yeni Malzeme Modalı */}
+      {showNewMaterialModal && (
+        <NewMaterialModal
+          onSave={handleAddMaterial}
+          onClose={() => setShowNewMaterialModal(false)}
+        />
+      )}
+
+      {/* Kategori Ekleme Modalı */}
+      {showAddCategoryModal && (
+        <AddCategoryModal
+          onSave={loadData}
+          onClose={() => setShowAddCategoryModal(false)}
+        />
+      )}
+
+      {/* Tedarikçi Ekleme Modalı */}
+      {showAddSupplierModal && (
+        <AddSupplierModal
+          onSave={loadData}
+          onClose={() => setShowAddSupplierModal(false)}
+        />
+      )}
+
       {showBarcodeScanner && (
         <BarcodeScannerModal
           onScan={handleBarcodeScan}
@@ -2818,489 +3971,6 @@ export default function MaterialManagement() {
           onClose={() => setShowBulkEditModal(false)}
         />
       )}
-    </div>
-  );
-}
-
-// Malzeme Modal Component
-interface MaterialModalProps {
-  material?: Material | null;
-  categories: Category[];
-  suppliers: Supplier[];
-  onSave: (material: any) => void;
-  onClose: () => void;
-}
-
-function MaterialModal({ material, categories, suppliers, onSave, onClose }: MaterialModalProps) {
-  const [formData, setFormData] = useState({
-    name: material?.name || '',
-    barcode: material?.barcode || '',
-    gtin: material?.gtin || '',
-    sn: material?.sn || '',
-    udiCode: material?.udiCode || '',
-    allBarcode: material?.allBarcode || '',
-    category: material?.category || '',
-    subCategory: material?.subCategory || '',
-    unit: material?.unit || 'adet',
-    unitPrice: material?.unitPrice || 0,
-    currentStock: material?.currentStock || 0,
-    minStock: material?.minStock || 0,
-    supplier: material?.supplier || '',
-    expirationDate: material?.expirationDate || '',
-    serialNoStatus: material?.serialNoStatus || '',
-    materialDescription: material?.materialDescription || '',
-    intuitiveCode: material?.intuitiveCode || '',
-    serialNumber: material?.serialNumber || '',
-    status: material?.status || 'normal',
-  });
-
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [newCategory, setNewCategory] = useState('');
-  const [newSupplier, setNewSupplier] = useState('');
-
-  const units = ['adet', 'kutu', 'şişe', 'tüp', 'paket', 'ampul', 'kg', 'lt', 'metre'];
-  const statusOptions: MaterialStatus[] = ['normal', 'konsinye', 'iade', 'faturalı'];
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name.trim()) {
-      alert('Lütfen malzeme adı giriniz!');
-      return;
-    }
-
-    if (!formData.barcode.trim()) {
-      formData.barcode = `AUTO_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-
-    onSave(formData);
-  };
-
-  const handleBarcodeScan = (barcode: string) => {
-    setFormData({ ...formData, barcode });
-    setShowBarcodeScanner(false);
-  };
-
-  const handleAddCategory = () => {
-    if (newCategory.trim()) {
-      const newCat: Omit<Category, 'id'> = {
-        name: newCategory.trim(),
-        description: '',
-        isActive: true,
-        createdAt: new Date().toISOString()
-      };
-      dataService.saveCategory(newCat);
-      setFormData({ ...formData, category: newCategory.trim() });
-      setNewCategory('');
-    }
-  };
-
-  const handleAddSupplier = () => {
-    if (newSupplier.trim()) {
-      const newSup: Omit<Supplier, 'id'> = {
-        name: newSupplier.trim(),
-        contactPerson: '',
-        email: '',
-        phone: '',
-        address: '',
-        isActive: true,
-        createdAt: new Date().toISOString()
-      };
-      dataService.saveSupplier(newSup);
-      setFormData({ ...formData, supplier: newSupplier.trim() });
-      setNewSupplier('');
-    }
-  };
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-container w-full max-w-4xl mx-4">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">
-            {material ? 'Malzeme Bilgilerini Düzenle' : 'Yeni Malzeme Ekle'}
-          </h3>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Malzeme Adı *
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="input-modern"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Barkod
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    className="input-modern flex-1"
-                    value={formData.barcode}
-                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                    placeholder="Boş bırakılırsa otomatik oluşturulur"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowBarcodeScanner(true)}
-                    className="btn-modern"
-                  >
-                    <Camera className="h-4 w-4" />
-                    <span>Tara</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  GTIN
-                </label>
-                <input
-                  type="text"
-                  className="input-modern"
-                  value={formData.gtin}
-                  onChange={(e) => setFormData({ ...formData, gtin: e.target.value })}
-                  placeholder="GTIN numarası"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  SN
-                </label>
-                <input
-                  type="text"
-                  className="input-modern"
-                  value={formData.sn}
-                  onChange={(e) => setFormData({ ...formData, sn: e.target.value })}
-                  placeholder="Seri numarası"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  UDI Code
-                </label>
-                <input
-                  type="text"
-                  className="input-modern"
-                  value={formData.udiCode}
-                  onChange={(e) => setFormData({ ...formData, udiCode: e.target.value })}
-                  placeholder="UDI kodu"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  All Barcode
-                </label>
-                <input
-                  type="text"
-                  className="input-modern"
-                  value={formData.allBarcode}
-                  onChange={(e) => setFormData({ ...formData, allBarcode: e.target.value })}
-                  placeholder="Tüm barkodlar"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Kategori
-                </label>
-                <div className="flex space-x-2">
-                  <select
-                    className="input-modern flex-1"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option value="">Kategori seçin</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.name}>{category.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setNewCategory('Yeni kategori...')}
-                  className="mt-1 text-xs text-blue-600 hover:text-blue-800"
-                >
-                  + Yeni Kategori Ekle
-                </button>
-                {newCategory !== '' && (
-                  <div className="mt-2 flex space-x-2">
-                    <input
-                      type="text"
-                      className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
-                      value={newCategory}
-                      onChange={(e) => setNewCategory(e.target.value)}
-                      placeholder="Yeni kategori adı"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddCategory}
-                      className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                    >
-                      Ekle
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNewCategory('')}
-                      className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
-                    >
-                      İptal
-                    </button>
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Alt Kategori
-                </label>
-                <input
-                  type="text"
-                  className="input-modern"
-                  value={formData.subCategory}
-                  onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
-                  placeholder="Alt kategori (isteğe bağlı)"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mevcut Stok
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input-modern"
-                  value={formData.currentStock}
-                  onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Birim Fiyat (₺)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="input-modern"
-                  value={formData.unitPrice}
-                  onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Birim
-                </label>
-                <select
-                  className="input-modern"
-                  value={formData.unit}
-                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                >
-                  {units.map(unit => (
-                    <option key={unit} value={unit}>{unit}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Kritik Stok
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  className="input-modern"
-                  value={formData.minStock}
-                  onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tedarikçi
-                </label>
-                <div className="flex space-x-2">
-                  <select
-                    className="input-modern flex-1"
-                    value={formData.supplier}
-                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                  >
-                    <option value="">Tedarikçi seçin</option>
-                    {suppliers.map(supplier => (
-                      <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setNewSupplier('Yeni tedarikçi...')}
-                  className="mt-1 text-xs text-blue-600 hover:text-blue-800"
-                >
-                  + Yeni Tedarikçi Ekle
-                </button>
-                {newSupplier !== '' && (
-                  <div className="mt-2 flex space-x-2">
-                    <input
-                      type="text"
-                      className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm"
-                      value={newSupplier}
-                      onChange={(e) => setNewSupplier(e.target.value)}
-                      placeholder="Yeni tedarikçi adı"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddSupplier}
-                      className="px-2 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                    >
-                      Ekle
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNewSupplier('')}
-                      className="px-2 py-1 bg-gray-300 rounded text-sm hover:bg-gray-400"
-                    >
-                      İptal
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  SKT
-                </label>
-                <input
-                  type="date"
-                  className="input-modern"
-                  value={formData.expirationDate}
-                  onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Seri No Durumu
-                </label>
-                <select
-                  className="input-modern"
-                  value={formData.serialNoStatus}
-                  onChange={(e) => setFormData({ ...formData, serialNoStatus: e.target.value })}
-                >
-                  <option value="">Seçiniz</option>
-                  <option value="Aktif">Aktif</option>
-                  <option value="Pasif">Pasif</option>
-                  <option value="İade">İade</option>
-                  <option value="Hurda">Hurda</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Statü
-                </label>
-                <select
-                  className="input-modern"
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as MaterialStatus })}
-                >
-                  {statusOptions.map(status => (
-                    <option key={status} value={status}>{status.toUpperCase()}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sezgisel Kod
-                </label>
-                <input
-                  type="text"
-                  className="input-modern"
-                  value={formData.intuitiveCode}
-                  onChange={(e) => setFormData({ ...formData, intuitiveCode: e.target.value })}
-                  placeholder="Sezgisel kod"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Seri Numarası
-                </label>
-                <input
-                  type="text"
-                  className="input-modern"
-                  value={formData.serialNumber}
-                  onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                  placeholder="Seri numarası"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Malzeme Açıklama
-              </label>
-              <input
-                type="text"
-                className="input-modern"
-                value={formData.materialDescription}
-                onChange={(e) => setFormData({ ...formData, materialDescription: e.target.value })}
-                placeholder="Malzeme açıklaması"
-              />
-            </div>
-
-            <div className="flex space-x-3 pt-4">
-              <button
-                type="submit"
-                className="btn-modern flex-1"
-              >
-                {material ? 'Güncelle' : 'Ekle'}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn-modern-secondary flex-1"
-              >
-                İptal
-              </button>
-            </div>
-          </form>
-
-          {showBarcodeScanner && (
-            <BarcodeScannerModal
-              onScan={handleBarcodeScan}
-              onClose={() => setShowBarcodeScanner(false)}
-            />
-          )}
-        </div>
-      </div>
     </div>
   );
 }

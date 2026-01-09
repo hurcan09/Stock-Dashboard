@@ -1,7 +1,136 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, User, Edit2, ShoppingCart, Eye, Trash2, Barcode, FileText, Download, Filter } from 'lucide-react';
+import { Plus, Search, User, Edit2, ShoppingCart, Eye, Trash2, Barcode, FileText, Download, Filter, Camera, X, Package } from 'lucide-react';
 import { Patient, PatientMaterialUsage, Material } from '../types';
 import { dataService } from '../utils/dataService';
+
+// Barkod Tarama Modal Component'i
+function BarcodeScannerModal({ onScan, onClose }: { onScan: (barcode: string) => void; onClose: () => void }) {
+  const [scanning, setScanning] = useState(false);
+  const [manualBarcode, setManualBarcode] = useState('');
+  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualBarcode.trim()) {
+      onScan(manualBarcode.trim());
+      onClose();
+    }
+  };
+
+  const startCameraScan = async () => {
+    try {
+      setScanning(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      setVideoStream(stream);
+    } catch (error) {
+      console.error('Kamera erişim hatası:', error);
+      alert('Kameraya erişim sağlanamadı!');
+      setScanning(false);
+    }
+  };
+
+  const stopCameraScan = () => {
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      setVideoStream(null);
+    }
+    setScanning(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      stopCameraScan();
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 border border-gray-200/60">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">Barkod/QR Tara</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="text-center mb-6">
+          <div className="bg-gray-100 rounded-lg p-8 mb-4">
+            <div className="relative inline-block">
+              <div className="w-64 h-48 bg-gray-200 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-400">
+                {scanning && videoStream ? (
+                  <video 
+                    ref={video => {
+                      if (video) video.srcObject = videoStream;
+                    }}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : scanning ? (
+                  <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Kamera başlatılıyor...</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">Kamera görüntüsü burada görünecek</p>
+                  </div>
+                )}
+              </div>
+              <div className="absolute inset-0 border-2 border-green-500 rounded-lg pointer-events-none">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 text-xs rounded">
+                  Barkodu bu alana getirin
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-4">
+            Barkod veya QR kodu kamera görüş alanının vurgulanan yerine tam olarak yerleştirin.
+          </p>
+        </div>
+
+        <div className="border-t pt-4">
+          <form onSubmit={handleManualSubmit} className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Veya barkodu manuel girin:
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={manualBarcode}
+                onChange={(e) => setManualBarcode(e.target.value)}
+                placeholder="Barkod numarasını girin"
+                autoFocus
+              />
+            </div>
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={scanning ? stopCameraScan : startCameraScan}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-all flex items-center justify-center space-x-2"
+              >
+                <Camera className="h-4 w-4" />
+                <span>{scanning ? 'Kamerayı Kapat' : 'Kamerayı Aç'}</span>
+              </button>
+              <button
+                type="submit"
+                disabled={!manualBarcode.trim()}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg transition-all"
+              >
+                Tamam
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function PatientManagement() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -12,6 +141,7 @@ export default function PatientManagement() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showMaterialUsage, setShowMaterialUsage] = useState(false);
   const [showQuickUsage, setShowQuickUsage] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [columnFilters, setColumnFilters] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -23,7 +153,6 @@ export default function PatientManagement() {
     setPatients(dataService.getPatients());
   };
 
-  // Filtreleme fonksiyonu - sütun filtreleri ve arama terimini birleştirir
   const filteredPatients = patients.filter(patient => {
     const matchesSearch = 
       patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,7 +169,6 @@ export default function PatientManagement() {
     return matchesSearch && matchesColumnFilters;
   });
 
-  // Sütun filtreleme fonksiyonu
   const handleColumnFilter = (column: string, value: string) => {
     setColumnFilters(prev => ({
       ...prev,
@@ -48,7 +176,6 @@ export default function PatientManagement() {
     }));
   };
 
-  // Sütun filtresini temizle
   const clearColumnFilter = (column: string) => {
     setColumnFilters(prev => {
       const newFilters = { ...prev };
@@ -57,7 +184,6 @@ export default function PatientManagement() {
     });
   };
 
-  // Hasta ekleme fonksiyonu
   const handleAddPatient = (patientData: Omit<Patient, 'id' | 'createdAt'>) => {
     dataService.savePatient(patientData);
     
@@ -73,7 +199,6 @@ export default function PatientManagement() {
     setShowAddModal(false);
   };
 
-  // Hasta güncelleme fonksiyonu
   const handleUpdatePatient = (id: string, updates: Partial<Patient>) => {
     dataService.updatePatient(id, updates);
     
@@ -90,17 +215,14 @@ export default function PatientManagement() {
     setEditingPatient(null);
   };
 
-  // Hasta silme fonksiyonu
   const handleDeletePatient = (id: string) => {
     const patient = patients.find(p => p.id === id);
     if (confirm(`"${patient?.name} ${patient?.surname}" hastasını silmek istediğinizden emin misiniz?`)) {
-      // Önce hastaya ait malzeme kullanım kayıtlarını sil
       const patientUsages = dataService.getPatientMaterialUsage().filter(usage => usage.patientId === id);
       patientUsages.forEach(usage => {
         dataService.deletePatientMaterialUsage(usage.id);
       });
       
-      // Sonra hastayı sil
       dataService.deletePatient(id);
       
       dataService.logAction({
@@ -115,15 +237,32 @@ export default function PatientManagement() {
     }
   };
 
-  // Hızlı malzeme kullanımı fonksiyonu
   const handleQuickMaterialUsage = (patient: Patient) => {
     setSelectedPatient(patient);
     setShowQuickUsage(true);
   };
 
-  // Barkod ile malzeme kullanımı fonksiyonu
-  const handleAddMaterialUsageWithBarcode = (usageData: {
-    barcode: string;
+  // Güncellenmiş fonksiyon: GTIN, Barkod, SN, All Barcode ile malzeme bulma
+  const findMaterialByCode = (code: string): Material | undefined => {
+    if (!code.trim()) return undefined;
+    
+    const cleanCode = code.trim();
+    
+    // Malzemelerde ara: GTIN, Barkod, SN, All Barcode
+    const material = materials.find(m => 
+      m.barcode === cleanCode ||
+      m.gtin === cleanCode ||
+      m.sn === cleanCode ||
+      m.allBarcode === cleanCode ||
+      m.udiCode === cleanCode ||
+      m.intuitiveCode === cleanCode
+    );
+    
+    return material;
+  };
+
+  const handleAddMaterialUsageWithCode = (usageData: {
+    code: string;
     quantity: number;
     notes: string;
     procedureFee?: number;
@@ -131,10 +270,10 @@ export default function PatientManagement() {
     if (!selectedPatient) return;
 
     try {
-      // Barkod ile malzeme bul
-      const material = materials.find(m => m.barcode === usageData.barcode);
+      // Kod ile malzeme bul
+      const material = findMaterialByCode(usageData.code);
       if (!material) {
-        throw new Error('Bu barkoda ait malzeme bulunamadı!');
+        throw new Error('Bu koda ait malzeme bulunamadı!');
       }
 
       // Stok kontrolü
@@ -164,13 +303,13 @@ export default function PatientManagement() {
       dataService.logAction({
         action: 'MALZEME_KULLANIMI',
         module: 'HASTA_YÖNETİMİ',
-        recordId: usageData.barcode,
-        details: `${selectedPatient.name} ${selectedPatient.surname} hastası için ${material.name} (${usageData.barcode}) kullanıldı - Miktar: ${usageData.quantity} - İşlem Ücreti: ₺${usageData.procedureFee || 0}`,
+        recordId: usageData.code,
+        details: `${selectedPatient.name} ${selectedPatient.surname} hastası için ${material.name} (${usageData.code}) kullanıldı - Miktar: ${usageData.quantity} - İşlem Ücreti: ₺${usageData.procedureFee || 0}`,
         performedBy: 'System',
       });
 
       loadPatients();
-      setMaterials(dataService.getMaterials()); // Malzeme listesini güncelle
+      setMaterials(dataService.getMaterials());
       setShowQuickUsage(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Bir hata oluştu!';
@@ -178,14 +317,12 @@ export default function PatientManagement() {
     }
   };
 
-  // Klasik malzeme kullanımı fonksiyonu
   const handleAddMaterialUsage = (usage: Omit<PatientMaterialUsage, 'id'>) => {
     dataService.savePatientMaterialUsage(usage);
     
     const material = materials.find(m => m.id === usage.materialId);
     const patient = patients.find(p => p.id === usage.patientId);
     
-    // Stok güncelle
     if (material) {
       dataService.updateMaterial(material.id, {
         currentStock: material.currentStock - usage.quantity
@@ -204,18 +341,15 @@ export default function PatientManagement() {
     setShowMaterialUsage(false);
   };
 
-  // Hasta başına toplam maliyet hesaplama (malzeme + işlem ücreti)
   const getTotalCostForPatient = (patientId: string) => {
     const usages = dataService.getPatientMaterialUsage().filter(usage => usage.patientId === patientId);
     return usages.reduce((total, usage) => total + usage.totalCost + (usage.procedureFee || 0), 0);
   };
 
-  // Hasta malzeme kullanımlarını getirme
   const getPatientUsages = (patientId: string) => {
     return dataService.getPatientMaterialUsage().filter(usage => usage.patientId === patientId);
   };
 
-  // Excel export fonksiyonu
   const handleExportExcel = () => {
     const headers = ['Ad', 'Soyad', 'TC Kimlik No', 'Telefon', 'Adres', 'Kayıt Tarihi', 'Toplam Maliyet'];
     const data = filteredPatients.map(patient => [
@@ -243,12 +377,10 @@ export default function PatientManagement() {
     document.body.removeChild(link);
   };
 
-  // Hasta detaylarını PDF olarak indirme
   const handleExportPatientDetails = (patient: Patient) => {
     const usages = getPatientUsages(patient.id);
     const totalCost = getTotalCostForPatient(patient.id);
     
-    // Basit bir PDF içeriği oluştur (gerçek uygulamada PDF kütüphanesi kullanılır)
     const content = `
       HASTA DETAY RAPORU
       ==================
@@ -295,7 +427,6 @@ export default function PatientManagement() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Başlık ve Yeni Hasta Butonu */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Hasta Yönetimi</h2>
         <div className="flex space-x-2">
@@ -316,9 +447,7 @@ export default function PatientManagement() {
         </div>
       </div>
 
-      {/* Ana İçerik */}
       <div className="bg-white/60 backdrop-blur-sm rounded-lg shadow-sm p-6 border border-gray-200/40">
-        {/* Arama Çubuğu */}
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -332,7 +461,6 @@ export default function PatientManagement() {
           </div>
         </div>
 
-        {/* Sütun Filtreleri */}
         <div className="grid grid-cols-5 gap-2 mb-4 p-3 bg-gray-50/60 rounded-lg">
           <div className="relative">
             <input
@@ -408,7 +536,6 @@ export default function PatientManagement() {
           </div>
         </div>
 
-        {/* Hasta Tablosu */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -443,18 +570,14 @@ export default function PatientManagement() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex space-x-2">
-                      {/* Detay Görüntüle Butonu */}
                       <button
-                        onClick={() => {
-                          setSelectedPatient(patient);
-                        }}
+                        onClick={() => setSelectedPatient(patient)}
                         className="text-blue-600 hover:text-blue-800 p-1 transition-colors"
                         title="Detayları Görüntüle"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
 
-                      {/* PDF İndirme Butonu */}
                       <button
                         onClick={() => handleExportPatientDetails(patient)}
                         className="text-red-600 hover:text-red-800 p-1 transition-colors"
@@ -463,7 +586,6 @@ export default function PatientManagement() {
                         <FileText className="h-4 w-4" />
                       </button>
                       
-                      {/* Düzenle Butonu */}
                       <button
                         onClick={() => setEditingPatient(patient)}
                         className="text-yellow-600 hover:text-yellow-800 p-1 transition-colors"
@@ -472,28 +594,25 @@ export default function PatientManagement() {
                         <Edit2 className="h-4 w-4" />
                       </button>
                       
-                      {/* Hızlı Malzeme Kullanım Butonu */}
                       <button
                         onClick={() => handleQuickMaterialUsage(patient)}
                         className="text-green-600 hover:text-green-800 p-1 transition-colors"
-                        title="Hızlı Malzeme Kullanımı (Barkod)"
+                        title="Hızlı Malzeme Kullanımı (GTIN/Barkod/SN)"
                       >
                         <Barcode className="h-4 w-4" />
                       </button>
                       
-                      {/* Klasik Malzeme Kullanım Butonu */}
                       <button
                         onClick={() => {
                           setSelectedPatient(patient);
                           setShowMaterialUsage(true);
                         }}
                         className="text-orange-600 hover:text-orange-800 p-1 transition-colors"
-                        title="Malzeme Kullanımı"
+                        title="Klasik Malzeme Kullanımı"
                       >
                         <ShoppingCart className="h-4 w-4" />
                       </button>
                       
-                      {/* Sil Butonu */}
                       <button
                         onClick={() => handleDeletePatient(patient.id)}
                         className="text-red-600 hover:text-red-800 p-1 transition-colors"
@@ -508,7 +627,6 @@ export default function PatientManagement() {
             </tbody>
           </table>
 
-          {/* Boş durum */}
           {filteredPatients.length === 0 && (
             <div className="text-center py-12">
               <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -534,7 +652,6 @@ export default function PatientManagement() {
           )}
         </div>
 
-        {/* Sayfa Bilgisi */}
         <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
           <div className="text-sm text-gray-600">
             Toplam <span className="font-semibold">{filteredPatients.length}</span> hasta
@@ -550,7 +667,6 @@ export default function PatientManagement() {
         </div>
       </div>
 
-      {/* Hasta Detayları Modal */}
       {selectedPatient && !showMaterialUsage && !showQuickUsage && (
         <PatientDetails
           patient={selectedPatient}
@@ -561,7 +677,6 @@ export default function PatientManagement() {
         />
       )}
 
-      {/* Hasta Ekleme/Düzenleme Modal */}
       {(showAddModal || editingPatient) && (
         <PatientModal
           patient={editingPatient}
@@ -576,7 +691,6 @@ export default function PatientManagement() {
         />
       )}
 
-      {/* Klasik Malzeme Kullanım Modal */}
       {showMaterialUsage && selectedPatient && (
         <MaterialUsageModal
           patient={selectedPatient}
@@ -589,16 +703,27 @@ export default function PatientManagement() {
         />
       )}
 
-      {/* Hızlı Malzeme Kullanım Modal */}
       {showQuickUsage && selectedPatient && (
         <QuickMaterialUsageModal
           patient={selectedPatient}
           materials={materials}
-          onSave={handleAddMaterialUsageWithBarcode}
+          onSave={handleAddMaterialUsageWithCode}
           onClose={() => {
             setShowQuickUsage(false);
             setSelectedPatient(null);
           }}
+        />
+      )}
+
+      {showBarcodeScanner && (
+        <BarcodeScannerModal
+          onScan={(barcode) => {
+            // Burada barkod tarandığında yapılacak işlemler
+            // Örneğin, hızlı malzeme kullanımı modaline gönder
+            console.log('Taranan barkod:', barcode);
+            setShowBarcodeScanner(false);
+          }}
+          onClose={() => setShowBarcodeScanner(false)}
         />
       )}
     </div>
@@ -624,7 +749,6 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // TC Kimlik No validasyonu
     if (formData.tcNo.length !== 11 || !/^\d+$/.test(formData.tcNo)) {
       alert('TC Kimlik No 11 haneli ve sadece rakamlardan oluşmalıdır!');
       return;
@@ -733,31 +857,49 @@ function PatientModal({ patient, onSave, onClose }: PatientModalProps) {
   );
 }
 
-// Hızlı Malzeme Kullanım Modal Component
+// Hızlı Malzeme Kullanım Modal Component (GTIN/Barkod/SN ile)
 interface QuickMaterialUsageModalProps {
   patient: Patient;
   materials: Material[];
-  onSave: (usage: { barcode: string; quantity: number; notes: string; procedureFee?: number }) => void;
+  onSave: (usage: { code: string; quantity: number; notes: string; procedureFee?: number }) => void;
   onClose: () => void;
 }
 
 function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickMaterialUsageModalProps) {
-  const [barcode, setBarcode] = useState('');
+  const [code, setCode] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const [procedureFee, setProcedureFee] = useState<number>(0);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
-  const currentMaterial = materials.find(m => m.barcode === barcode);
+  const findMaterialByCode = (code: string): Material | undefined => {
+    if (!code.trim()) return undefined;
+    
+    const cleanCode = code.trim();
+    
+    const material = materials.find(m => 
+      m.barcode === cleanCode ||
+      m.gtin === cleanCode ||
+      m.sn === cleanCode ||
+      m.allBarcode === cleanCode ||
+      m.udiCode === cleanCode ||
+      m.intuitiveCode === cleanCode
+    );
+    
+    return material;
+  };
+
+  const currentMaterial = findMaterialByCode(code);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!barcode) {
-      alert('Lütfen barkod giriniz!');
+    if (!code) {
+      alert('Lütfen GTIN, Barkod, SN veya All Barcode giriniz!');
       return;
     }
 
     if (!currentMaterial) {
-      alert('Bu barkoda ait malzeme bulunamadı!');
+      alert('Bu koda ait malzeme bulunamadı!');
       return;
     }
 
@@ -766,11 +908,16 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
       return;
     }
 
-    onSave({ barcode, quantity, notes, procedureFee });
-    setBarcode('');
+    onSave({ code, quantity, notes, procedureFee });
+    setCode('');
     setQuantity(1);
     setNotes('');
     setProcedureFee(0);
+  };
+
+  const handleBarcodeScan = (scannedCode: string) => {
+    setCode(scannedCode);
+    setShowBarcodeScanner(false);
   };
 
   return (
@@ -783,29 +930,62 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Barkod *
+              GTIN / Barkod / SN / All Barcode *
             </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              placeholder="Barkodu taratın veya girin"
-              autoFocus
-            />
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                required
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="GTIN, Barkod, SN veya All Barcode girin"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowBarcodeScanner(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
+                title="Barkod Tara"
+              >
+                <Camera className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Malzeme Yönetimi'ndeki GTIN, Barkod, SN veya All Barcode alanlarından biri ile eşleşmelidir
+            </p>
           </div>
 
           {currentMaterial && (
             <div className="bg-green-50/80 border border-green-200 rounded-lg p-3">
-              <h4 className="font-semibold text-green-800 mb-2">Malzeme Bilgileri</h4>
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-semibold text-green-800">Malzeme Bilgileri</h4>
+                <div className="flex items-center space-x-1">
+                  {currentMaterial.gtin && (
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">GTIN: {currentMaterial.gtin}</span>
+                  )}
+                  {currentMaterial.sn && (
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">SN: {currentMaterial.sn}</span>
+                  )}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><span className="font-medium">Ad:</span> {currentMaterial.name}</div>
+                <div><span className="font-medium">Barkod:</span> {currentMaterial.barcode}</div>
                 <div><span className="font-medium">Kategori:</span> {currentMaterial.category}</div>
-                <div><span className="font-medium">Mevcut Stok:</span> {currentMaterial.currentStock} {currentMaterial.unit}</div>
+                <div><span className="font-medium">Mevcut Stok:</span> 
+                  <span className={`font-semibold ml-1 ${currentMaterial.currentStock <= currentMaterial.minStock ? 'text-red-600' : 'text-green-600'}`}>
+                    {currentMaterial.currentStock} {currentMaterial.unit}
+                  </span>
+                </div>
                 <div><span className="font-medium">Birim Fiyat:</span> ₺{currentMaterial.unitPrice.toFixed(2)}</div>
-                <div><span className="font-medium">Tedarikçi:</span> {currentMaterial.supplier}</div>
-                <div><span className="font-medium">Toplam:</span> ₺{(currentMaterial.unitPrice * quantity).toFixed(2)}</div>
+                <div><span className="font-medium">Tedarikçi:</span> {currentMaterial.supplier || '-'}</div>
+                <div className="col-span-2">
+                  <span className="font-medium">Toplam:</span> 
+                  <span className="font-semibold text-green-600 ml-1">
+                    ₺{(currentMaterial.unitPrice * quantity).toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -814,17 +994,28 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Miktar *
             </label>
-            <input
-              type="number"
-              min="1"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-            />
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                min="1"
+                max={currentMaterial?.currentStock || 1}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.min(parseInt(e.target.value) || 1, currentMaterial?.currentStock || 1))}
+              />
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                / {currentMaterial?.currentStock || 0} {currentMaterial?.unit || 'adet'}
+              </span>
+            </div>
             {currentMaterial && quantity > currentMaterial.currentStock && (
               <p className="text-red-600 text-sm mt-1">
                 Yetersiz stok! Mevcut: {currentMaterial.currentStock} {currentMaterial.unit}
+              </p>
+            )}
+            {currentMaterial && currentMaterial.currentStock > 0 && currentMaterial.currentStock <= currentMaterial.minStock && (
+              <p className="text-yellow-600 text-sm mt-1">
+                ⚠️ Kritik stok seviyesi! ({currentMaterial.currentStock} / {currentMaterial.minStock})
               </p>
             )}
           </div>
@@ -860,7 +1051,7 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
           <div className="flex space-x-3 pt-4">
             <button
               type="submit"
-              disabled={!barcode || !currentMaterial || quantity > (currentMaterial?.currentStock || 0)}
+              disabled={!code || !currentMaterial || quantity > (currentMaterial?.currentStock || 0)}
               className="flex-1 bg-green-600/90 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium transition-colors"
             >
               Kullanımı Kaydet
@@ -875,6 +1066,13 @@ function QuickMaterialUsageModal({ patient, materials, onSave, onClose }: QuickM
           </div>
         </form>
       </div>
+
+      {showBarcodeScanner && (
+        <BarcodeScannerModal
+          onScan={handleBarcodeScan}
+          onClose={() => setShowBarcodeScanner(false)}
+        />
+      )}
     </div>
   );
 }
@@ -906,7 +1104,18 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
       return;
     }
 
+    const patientUsage: Omit<PatientMaterialUsage, 'id'> = {
+      patientId: patient.id,
+      materialId: selectedMaterial.id,
+      quantity,
+      unitPrice: selectedMaterial.unitPrice,
+      totalCost,
+      usageDate: new Date().toISOString(),
+      notes,
+      procedureFee,
+    };
 
+    onSave(patientUsage);
     setSelectedMaterialId('');
     setQuantity(1);
     setNotes('');
@@ -942,18 +1151,40 @@ function MaterialUsageModal({ patient, materials, onSave, onClose }: MaterialUsa
             </select>
           </div>
           
+          {selectedMaterial && (
+            <div className="bg-blue-50/80 p-3 rounded-lg">
+              <div className="flex items-center space-x-2 mb-1">
+                <Package className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">
+                  {selectedMaterial.category} • {selectedMaterial.supplier || 'Tedarikçi Yok'}
+                </span>
+              </div>
+              <div className="text-xs text-blue-700">
+                GTIN: {selectedMaterial.gtin || '-'} | 
+                SN: {selectedMaterial.sn || '-'} |
+                Barkod: {selectedMaterial.barcode}
+              </div>
+            </div>
+          )}
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Miktar *
             </label>
-            <input
-              type="number"
-              min="1"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
-              value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-            />
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                min="1"
+                max={selectedMaterial?.currentStock || 1}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/80"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.min(parseInt(e.target.value) || 1, selectedMaterial?.currentStock || 1))}
+              />
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                / {selectedMaterial?.currentStock || 0} {selectedMaterial?.unit || 'adet'}
+              </span>
+            </div>
             {selectedMaterial && quantity > selectedMaterial.currentStock && (
               <p className="text-red-600 text-sm mt-1">
                 Yetersiz stok! Mevcut: {selectedMaterial.currentStock} {selectedMaterial.unit}
@@ -1040,9 +1271,16 @@ function PatientDetails({ patient, usages, materials, onClose, onExport }: Patie
     return material ? material.name : 'Bilinmeyen Malzeme';
   };
 
-  const getMaterialBarcode = (materialId: string) => {
+  const getMaterialInfo = (materialId: string) => {
     const material = materials.find(m => m.id === materialId);
-    return material ? material.barcode : '-';
+    if (!material) return { barcode: '-', gtin: '-', sn: '-', allBarcode: '-' };
+    
+    return {
+      barcode: material.barcode,
+      gtin: material.gtin || '-',
+      sn: material.sn || '-',
+      allBarcode: material.allBarcode || '-'
+    };
   };
 
   const totalMaterialCost = usages.reduce((sum, usage) => sum + usage.totalCost, 0);
@@ -1073,7 +1311,6 @@ function PatientDetails({ patient, usages, materials, onClose, onExport }: Patie
           </div>
         </div>
 
-        {/* Hasta Bilgileri */}
         <div className="grid grid-cols-2 gap-6 mb-8">
           <div className="bg-gray-50/60 p-4 rounded-lg">
             <h4 className="font-semibold mb-3 text-gray-800">Kişisel Bilgiler</h4>
@@ -1097,7 +1334,6 @@ function PatientDetails({ patient, usages, materials, onClose, onExport }: Patie
           </div>
         </div>
 
-        {/* Malzeme Kullanım Geçmişi */}
         <div>
           <div className="flex justify-between items-center mb-4">
             <h4 className="font-semibold text-gray-800">Malzeme Kullanım Geçmişi</h4>
@@ -1112,7 +1348,7 @@ function PatientDetails({ patient, usages, materials, onClose, onExport }: Patie
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-2 px-4 font-semibold text-gray-700">Tarih</th>
                     <th className="text-left py-2 px-4 font-semibold text-gray-700">Malzeme</th>
-                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Barkod</th>
+                    <th className="text-left py-2 px-4 font-semibold text-gray-700">Kod Bilgileri</th>
                     <th className="text-left py-2 px-4 font-semibold text-gray-700">Miktar</th>
                     <th className="text-left py-2 px-4 font-semibold text-gray-700">Birim Fiyat</th>
                     <th className="text-left py-2 px-4 font-semibold text-gray-700">Malzeme Toplam</th>
@@ -1124,6 +1360,7 @@ function PatientDetails({ patient, usages, materials, onClose, onExport }: Patie
                 <tbody>
                   {usages.map((usage) => {
                     const material = materials.find(m => m.id === usage.materialId);
+                    const codeInfo = getMaterialInfo(usage.materialId);
                     const usageTotal = usage.totalCost + (usage.procedureFee || 0);
                     
                     return (
@@ -1132,15 +1369,25 @@ function PatientDetails({ patient, usages, materials, onClose, onExport }: Patie
                           {new Date(usage.usageDate).toLocaleDateString('tr-TR')}
                         </td>
                         <td className="py-2 px-4 text-sm">
-                          {getMaterialName(usage.materialId)}
+                          <div className="font-medium">{getMaterialName(usage.materialId)}</div>
                           {material && (
                             <div className="text-xs text-gray-500">
-                              {material.category} • {material.supplier}
+                              {material.category} • {material.supplier || 'Tedarikçi Yok'}
                             </div>
                           )}
                         </td>
-                        <td className="py-2 px-4 text-sm text-gray-600">
-                          {getMaterialBarcode(usage.materialId)}
+                        <td className="py-2 px-4 text-sm">
+                          <div className="space-y-1">
+                            <div className="text-xs">
+                              <span className="font-medium">Barkod:</span> {codeInfo.barcode}
+                            </div>
+                            <div className="text-xs">
+                              <span className="font-medium">GTIN:</span> {codeInfo.gtin}
+                            </div>
+                            <div className="text-xs">
+                              <span className="font-medium">SN:</span> {codeInfo.sn}
+                            </div>
+                          </div>
                         </td>
                         <td className="py-2 px-4 text-sm">
                           {usage.quantity} {material?.unit || 'adet'}
@@ -1174,7 +1421,6 @@ function PatientDetails({ patient, usages, materials, onClose, onExport }: Patie
           )}
         </div>
 
-        {/* Kapat Butonu */}
         <div className="flex justify-end mt-6">
           <button
             onClick={onClose}

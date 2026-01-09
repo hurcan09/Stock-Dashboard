@@ -1,4 +1,4 @@
-// src/components/Layout.tsx - GÜNCELLENMİŞ VERSİYON (Yetkilere göre menü)
+// src/components/Layout.tsx - GÜNCELLENMİŞ VERSİYON (Mobil menü düzeltmesi)
 import React, { ReactNode, useState, useEffect, useCallback } from 'react';
 import { 
   Home as AnaSayfaIcon,
@@ -106,11 +106,13 @@ const StatusCard: React.FC<{
   );
 };
 
-// Sol Menü Component'i
+// Sol Menü Component'i (Mobil için Overlay)
 const SideMenu: React.FC<{
   currentPage: string;
   onPageChange: (page: string) => void;
-}> = ({ currentPage, onPageChange }) => {
+  isMobileMenuOpen: boolean;
+  onCloseMobileMenu: () => void;
+}> = ({ currentPage, onPageChange, isMobileMenuOpen, onCloseMobileMenu }) => {
   const [showUserSection, setShowUserSection] = useState(false);
   const { user, canViewPage, getRoleDisplayName } = useAuth();
   
@@ -136,122 +138,221 @@ const SideMenu: React.FC<{
   const recentActivities = dataService.getLogs().slice(0, 5);
   const canViewActivities = user?.role === 'admin' || user?.role === 'manager';
 
+  const handleMenuItemClick = (pageId: string) => {
+    onPageChange(pageId);
+    onCloseMobileMenu();
+  };
+
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#0F1B5D] to-[#1E3A8A] text-white">
-      {/* Logo ve Hastane Adı */}
-      <div className="p-6 border-b border-blue-900">
-        <div className="flex items-center space-x-3">
-          <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-xl">
-              <Hospital className="h-7 w-7 text-white" />
-            </div>
-            <div className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full"></div>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Osmangazi Göz</h1>
-            <p className="text-orange-400 text-sm">Stok Takip Sistemi</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Kullanıcı Bilgileri */}
-      <div className="p-4 border-b border-blue-800">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white font-bold text-lg shadow-xl">
-            {user?.name?.charAt(0).toUpperCase() || 'U'}
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-white">{user?.name}</p>
-            <p className="text-sm text-orange-300">{getRoleDisplayName()}</p>
-          </div>
-          <button 
-            onClick={() => setShowUserSection(!showUserSection)}
-            className="p-2 rounded-lg hover:bg-blue-800 transition-colors"
-          >
-            <ChevronDown className={`h-4 w-4 text-blue-300 transition-transform ${showUserSection ? 'rotate-180' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* Kullanıcı Detayları */}
-      {showUserSection && (
-        <div className="px-4 py-3 bg-blue-900/50">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-blue-300">Departman:</span>
-              <span className="font-medium text-white">{user?.department}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-blue-300">Email:</span>
-              <span className="font-medium text-white">{user?.email}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-blue-300">Yetkiler:</span>
-              <div className="flex flex-wrap gap-1 justify-end">
-                {user?.permissions?.manageMaterials && (
-                  <span className="px-2 py-1 bg-blue-700 text-blue-100 text-xs rounded-full">Malzeme</span>
-                )}
-                {user?.permissions?.managePatients && (
-                  <span className="px-2 py-1 bg-green-700 text-green-100 text-xs rounded-full">Hasta</span>
-                )}
-                {user?.permissions?.manageInvoices && (
-                  <span className="px-2 py-1 bg-purple-700 text-purple-100 text-xs rounded-full">Fatura</span>
-                )}
-                {user?.permissions?.viewReports && (
-                  <span className="px-2 py-1 bg-orange-700 text-orange-100 text-xs rounded-full">Rapor</span>
-                )}
-                {user?.permissions?.manageUsers && (
-                  <span className="px-2 py-1 bg-red-700 text-red-100 text-xs rounded-full">Kullanıcı</span>
-                )}
+    <>
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 sticky top-0 h-screen z-50">
+        <div className="h-full w-full flex flex-col bg-gradient-to-b from-[#0F1B5D] to-[#1E3A8A] text-white">
+          {/* Logo ve Hastane Adı */}
+          <div className="p-6 border-b border-blue-900">
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-xl">
+                  <Hospital className="h-7 w-7 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full"></div>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">Osmangazi Göz</h1>
+                <p className="text-orange-400 text-sm">Stok Takip Sistemi</p>
               </div>
             </div>
+          </div>
+
+          {/* Kullanıcı Bilgileri */}
+          <div className="p-4 border-b border-blue-800">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white font-bold text-lg shadow-xl">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-white">{user?.name}</p>
+                <p className="text-sm text-orange-300">{getRoleDisplayName()}</p>
+              </div>
+              <button 
+                onClick={() => setShowUserSection(!showUserSection)}
+                className="p-2 rounded-lg hover:bg-blue-800 transition-colors"
+              >
+                <ChevronDown className={`h-4 w-4 text-blue-300 transition-transform ${showUserSection ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Kullanıcı Detayları */}
+          {showUserSection && (
+            <div className="px-4 py-3 bg-blue-900/50">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-blue-300">Departman:</span>
+                  <span className="font-medium text-white">{user?.department}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-blue-300">Email:</span>
+                  <span className="font-medium text-white">{user?.email}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-blue-300">Yetkiler:</span>
+                  <div className="flex flex-wrap gap-1 justify-end">
+                    {user?.permissions?.manageMaterials && (
+                      <span className="px-2 py-1 bg-blue-700 text-blue-100 text-xs rounded-full">Malzeme</span>
+                    )}
+                    {user?.permissions?.managePatients && (
+                      <span className="px-2 py-1 bg-green-700 text-green-100 text-xs rounded-full">Hasta</span>
+                    )}
+                    {user?.permissions?.manageInvoices && (
+                      <span className="px-2 py-1 bg-purple-700 text-purple-100 text-xs rounded-full">Fatura</span>
+                    )}
+                    {user?.permissions?.viewReports && (
+                      <span className="px-2 py-1 bg-orange-700 text-orange-100 text-xs rounded-full">Rapor</span>
+                    )}
+                    {user?.permissions?.manageUsers && (
+                      <span className="px-2 py-1 bg-red-700 text-red-100 text-xs rounded-full">Kullanıcı</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Ana Menü */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            <div className="space-y-1">
+              {filteredMenuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => onPageChange(item.id)}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 font-medium rounded-lg transition-all duration-300 ${
+                    currentPage === item.id
+                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-xl border-l-4 border-orange-400'
+                      : 'text-blue-100 hover:text-white hover:bg-blue-800'
+                  }`}
+                >
+                  <div className={`${currentPage === item.id ? 'text-white' : 'text-orange-300'}`}>
+                    {item.icon}
+                  </div>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Son Aktiviteler - Sadece Admin ve Yönetici için */}
+          {canViewActivities && (
+            <div className="p-4 border-t border-blue-800">
+              <h3 className="font-semibold text-orange-400 mb-3 flex items-center">
+                <Clock className="h-4 w-4 mr-2" />
+                Son Aktiviteler
+              </h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {recentActivities.map((log: SystemLog, index) => (
+                  <div key={index} className="bg-blue-900/20 rounded-lg p-2">
+                    <p className="text-xs font-medium text-white">{log.performedBy}</p>
+                    <p className="text-xs text-blue-200 truncate">{log.details}</p>
+                    <p className="text-xs text-blue-400 text-right">
+                      {log.performedAt ? new Date(log.performedAt).toLocaleTimeString('tr-TR') : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobil Menü Overlay */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={onCloseMobileMenu}
+          />
+          <div className="absolute left-0 top-0 h-full w-80 bg-gradient-to-b from-[#0F1B5D] to-[#1E3A8A] text-white shadow-2xl">
+            {/* Mobil Menü Başlık */}
+            <div className="p-6 border-b border-blue-900 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-xl">
+                    <Hospital className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full"></div>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white">Osmangazi Göz</h1>
+                  <p className="text-orange-400 text-sm">Stok Takip Sistemi</p>
+                </div>
+              </div>
+              <button
+                onClick={onCloseMobileMenu}
+                className="p-2 text-gray-400 hover:text-orange-400 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Kullanıcı Bilgileri */}
+            <div className="p-4 border-b border-blue-800">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white font-bold text-lg shadow-xl">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-white">{user?.name}</p>
+                  <p className="text-sm text-orange-300">{getRoleDisplayName()}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Ana Menü */}
+            <div className="flex-1 p-4 overflow-y-auto">
+              <div className="space-y-1">
+                {filteredMenuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleMenuItemClick(item.id)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 font-medium rounded-lg transition-all duration-300 ${
+                      currentPage === item.id
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-xl border-l-4 border-orange-400'
+                        : 'text-blue-100 hover:text-white hover:bg-blue-800'
+                    }`}
+                  >
+                    <div className={`${currentPage === item.id ? 'text-white' : 'text-orange-300'}`}>
+                      {item.icon}
+                    </div>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Son Aktiviteler - Sadece Admin ve Yönetici için */}
+            {canViewActivities && (
+              <div className="p-4 border-t border-blue-800">
+                <h3 className="font-semibold text-orange-400 mb-3 flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Son Aktiviteler
+                </h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {recentActivities.map((log: SystemLog, index) => (
+                    <div key={index} className="bg-blue-900/20 rounded-lg p-2">
+                      <p className="text-xs font-medium text-white">{log.performedBy}</p>
+                      <p className="text-xs text-blue-200 truncate">{log.details}</p>
+                      <p className="text-xs text-blue-400 text-right">
+                        {log.performedAt ? new Date(log.performedAt).toLocaleTimeString('tr-TR') : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
-
-      {/* Ana Menü */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-1">
-          {filteredMenuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onPageChange(item.id)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 font-medium rounded-lg transition-all duration-300 ${
-                currentPage === item.id
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-xl border-l-4 border-orange-400'
-                  : 'text-blue-100 hover:text-white hover:bg-blue-800'
-              }`}
-            >
-              <div className={`${currentPage === item.id ? 'text-white' : 'text-orange-300'}`}>
-                {item.icon}
-              </div>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Son Aktiviteler - Sadece Admin ve Yönetici için */}
-      {canViewActivities && (
-        <div className="p-4 border-t border-blue-800">
-          <h3 className="font-semibold text-orange-400 mb-3 flex items-center">
-            <Clock className="h-4 w-4 mr-2" />
-            Son Aktiviteler
-          </h3>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
-            {recentActivities.map((log: SystemLog, index) => (
-              <div key={index} className="bg-blue-900/20 rounded-lg p-2">
-                <p className="text-xs font-medium text-white">{log.performedBy}</p>
-                <p className="text-xs text-blue-200 truncate">{log.details}</p>
-                <p className="text-xs text-blue-400 text-right">
-                  {log.performedAt ? new Date(log.performedAt).toLocaleTimeString('tr-TR') : ''}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 
@@ -304,7 +405,7 @@ export default function Layout({ children, currentPage, onPageChange }: LayoutPr
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
   const { user, logout, getRoleDisplayName } = useAuth();
@@ -418,15 +519,23 @@ export default function Layout({ children, currentPage, onPageChange }: LayoutPr
     return dashboardStats.statusSummary?.[status] || 0;
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-white text-gray-900 flex">
-      {/* Sabit Sol Menü - Desktop */}
-      <div className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 sticky top-0 h-screen z-50">
-        <SideMenu 
-          currentPage={currentPage}
-          onPageChange={onPageChange}
-        />
-      </div>
+      {/* SideMenu Component'i (hem desktop hem mobile) */}
+      <SideMenu 
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onCloseMobileMenu={closeMobileMenu}
+      />
 
       {/* Ana İçerik Alanı */}
       <div className="flex-1 flex flex-col min-h-screen">
@@ -434,14 +543,14 @@ export default function Layout({ children, currentPage, onPageChange }: LayoutPr
         <header className="bg-gradient-to-r from-[#0F1B5D] to-[#1E3A8A] text-white shadow-lg sticky top-0 z-40 border-b border-blue-800">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
-              {/* Sol Taraf: Logo ve Menü Toggle (Mobil) */}
+              {/* Sol Taraf: Hamburger Menü ve Logo (Mobil) */}
               <div className="flex items-center space-x-4">
                 <button 
-                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  onClick={toggleMobileMenu}
                   className="lg:hidden p-2 rounded-lg hover:bg-blue-800 transition-colors"
                   aria-label="Menüyü aç/kapat"
                 >
-                  {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                  {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </button>
                 
                 <div className="flex items-center space-x-3 lg:hidden">
@@ -662,25 +771,6 @@ export default function Layout({ children, currentPage, onPageChange }: LayoutPr
             </div>
           </div>
         </header>
-
-        {/* Mobil Menü Overlay */}
-        {showMobileMenu && (
-          <div className="lg:hidden fixed inset-0 z-50">
-            <div 
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => setShowMobileMenu(false)}
-            />
-            <div className="absolute left-0 top-0 h-full w-80 bg-gradient-to-b from-[#0F1B5D] to-[#1E3A8A] text-white shadow-2xl">
-              <SideMenu 
-                currentPage={currentPage}
-                onPageChange={(page) => {
-                  onPageChange(page);
-                  setShowMobileMenu(false);
-                }}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Ana İçerik */}
         <main className="flex-1 overflow-x-auto p-0">

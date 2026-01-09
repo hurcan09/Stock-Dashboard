@@ -1,5 +1,5 @@
-// src/components/Anasayfa.tsx - GÜNCELLENMİŞ VERSİYON (Hava Durumu Eklendi)
-import React, { useState, useEffect } from 'react';
+// src/components/Anasayfa.tsx - GÜNCELLENMİŞ VERSİYON (Optimize edilmiş)
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Home as AnaSayfaIcon,
   Package, 
@@ -93,6 +93,8 @@ const SystemStatusModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   ];
 
+  const recentLogs = useMemo(() => dataService.getLogs().slice(0, 3), []);
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg">
@@ -103,7 +105,8 @@ const SystemStatusModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:text-gray-300"
+            className="text-white hover:text-gray-300 transition-colors"
+            aria-label="Kapat"
           >
             <X className="h-5 w-5" />
           </button>
@@ -128,7 +131,7 @@ const SystemStatusModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               Son Aktiviteler
             </h3>
             <div className="space-y-2">
-              {dataService.getLogs().slice(0, 3).map((log, index) => (
+              {recentLogs.map((log, index) => (
                 <div key={index} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg">
                   <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
                   <div className="flex-1 min-w-0">
@@ -147,7 +150,7 @@ const SystemStatusModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95"
           >
             Kapat
           </button>
@@ -213,9 +216,20 @@ const AddItemModal: React.FC<{
     document.body.removeChild(link);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setExcelFile(file);
+    }
+  };
+
+  const handleManualDataChange = (field: string, value: string) => {
+    setManualData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg">
+      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg max-h-[90vh] overflow-hidden">
         <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -228,25 +242,26 @@ const AddItemModal: React.FC<{
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-300"
+              className="text-white hover:text-gray-300 transition-colors"
+              aria-label="Kapat"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        <div className="p-5">
+        <div className="p-5 overflow-y-auto max-h-[calc(90vh-200px)]">
           {/* Tab Butonları */}
           <div className="flex border-b border-gray-200 mb-4">
             <button
-              className={`flex-1 py-2 text-sm font-medium ${activeTab === 'manual' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${activeTab === 'manual' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('manual')}
             >
               <Edit className="h-4 w-4 inline mr-2" />
               Manuel Ekle
             </button>
             <button
-              className={`flex-1 py-2 text-sm font-medium ${activeTab === 'excel' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${activeTab === 'excel' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('excel')}
             >
               <FileSpreadsheet className="h-4 w-4 inline mr-2" />
@@ -262,9 +277,9 @@ const AddItemModal: React.FC<{
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Yemek Türü</label>
                     <select 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.type}
-                      onChange={(e) => setManualData({...manualData, type: e.target.value})}
+                      onChange={(e) => handleManualDataChange('type', e.target.value)}
                     >
                       <option value="">Seçiniz</option>
                       <option value="breakfast">Kahvaltı</option>
@@ -276,18 +291,18 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Yemek Saati</label>
                     <input 
                       type="time"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.time}
-                      onChange={(e) => setManualData({...manualData, time: e.target.value})}
+                      onChange={(e) => handleManualDataChange('time', e.target.value)}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Kalori</label>
                     <input 
                       type="number"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.calories}
-                      onChange={(e) => setManualData({...manualData, calories: e.target.value})}
+                      onChange={(e) => handleManualDataChange('calories', e.target.value)}
                     />
                   </div>
                 </>
@@ -299,9 +314,9 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Ameliyat Türü</label>
                     <input 
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.type}
-                      onChange={(e) => setManualData({...manualData, type: e.target.value})}
+                      onChange={(e) => handleManualDataChange('type', e.target.value)}
                       placeholder="Örn: Katarakt Ameliyatı"
                     />
                   </div>
@@ -309,9 +324,9 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Doktor</label>
                     <input 
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.doctor}
-                      onChange={(e) => setManualData({...manualData, doctor: e.target.value})}
+                      onChange={(e) => handleManualDataChange('doctor', e.target.value)}
                       placeholder="Dr. Ad Soyad"
                     />
                   </div>
@@ -319,9 +334,9 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
                     <input 
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.patient}
-                      onChange={(e) => setManualData({...manualData, patient: e.target.value})}
+                      onChange={(e) => handleManualDataChange('patient', e.target.value)}
                       placeholder="Hasta Ad Soyad"
                     />
                   </div>
@@ -329,9 +344,9 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Başlangıç Saati</label>
                     <input 
                       type="time"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.time}
-                      onChange={(e) => setManualData({...manualData, time: e.target.value})}
+                      onChange={(e) => handleManualDataChange('time', e.target.value)}
                     />
                   </div>
                 </>
@@ -343,9 +358,9 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Doktor Adı</label>
                     <input 
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.name}
-                      onChange={(e) => setManualData({...manualData, name: e.target.value})}
+                      onChange={(e) => handleManualDataChange('name', e.target.value)}
                       placeholder="Dr. Ad Soyad"
                     />
                   </div>
@@ -353,9 +368,9 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Uzmanlık</label>
                     <input 
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.type}
-                      onChange={(e) => setManualData({...manualData, type: e.target.value})}
+                      onChange={(e) => handleManualDataChange('type', e.target.value)}
                       placeholder="Örn: Katarakt Uzmanı"
                     />
                   </div>
@@ -363,9 +378,9 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
                     <input 
                       type="tel"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.phone}
-                      onChange={(e) => setManualData({...manualData, phone: e.target.value})}
+                      onChange={(e) => handleManualDataChange('phone', e.target.value)}
                       placeholder="05xx xxx xx xx"
                     />
                   </div>
@@ -373,9 +388,9 @@ const AddItemModal: React.FC<{
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input 
                       type="email"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       value={manualData.email}
-                      onChange={(e) => setManualData({...manualData, email: e.target.value})}
+                      onChange={(e) => handleManualDataChange('email', e.target.value)}
                       placeholder="email@ornek.com"
                     />
                   </div>
@@ -385,7 +400,7 @@ const AddItemModal: React.FC<{
               <button
                 onClick={handleManualSubmit}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-2.5 rounded-lg font-medium hover:from-green-700 hover:to-green-800 transition-all disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-2.5 rounded-lg font-medium hover:from-green-700 hover:to-green-800 transition-all disabled:opacity-50 active:scale-95"
               >
                 {loading ? 'Ekleniyor...' : 'Ekle'}
               </button>
@@ -395,24 +410,24 @@ const AddItemModal: React.FC<{
           {/* Excel Ekleme */}
           {activeTab === 'excel' && (
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                 <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
                 <p className="text-sm text-gray-600 mb-2">Excel dosyanızı sürükleyip bırakın veya tıklayarak seçin</p>
                 <input
                   type="file"
                   accept=".xlsx,.xls,.csv"
-                  onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
+                  onChange={handleFileChange}
                   className="hidden"
                   id="excel-upload"
                 />
                 <label
                   htmlFor="excel-upload"
-                  className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-200"
+                  className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors active:scale-95"
                 >
                   Dosya Seç
                 </label>
                 {excelFile && (
-                  <div className="mt-3 p-2 bg-green-50 rounded-lg">
+                  <div className="mt-3 p-2 bg-green-50 rounded-lg border border-green-200">
                     <FileSpreadsheet className="h-4 w-4 inline mr-2 text-green-600" />
                     <span className="text-sm text-green-800">{excelFile.name}</span>
                   </div>
@@ -423,20 +438,20 @@ const AddItemModal: React.FC<{
                 <button
                   onClick={handleExcelUpload}
                   disabled={!excelFile || loading}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 active:scale-95"
                 >
                   {loading ? 'Yükleniyor...' : 'Excel Dosyasını Yükle'}
                 </button>
                 <button
                   onClick={downloadTemplate}
-                  className="flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors active:scale-95"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Şablon İndir
                 </button>
               </div>
 
-              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200">
                 <p className="font-medium mb-1">Excel formatı gereksinimleri:</p>
                 <ul className="list-disc list-inside space-y-1">
                   {type === 'meal' && (
@@ -474,7 +489,7 @@ const AddItemModal: React.FC<{
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-all"
+            className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-all active:scale-95"
           >
             İptal
           </button>
@@ -493,7 +508,7 @@ const SummaryModal: React.FC<{
   meals?: Meal[];
 }> = ({ type, onClose, surgeries = [], doctors = [], meals = [] }) => {
   
-  const summaryContents = {
+  const summaryContents = useMemo(() => ({
     surgery: {
       title: 'Ameliyat Özeti',
       icon: <Scalpel className="h-6 w-6" />,
@@ -527,7 +542,7 @@ const SummaryModal: React.FC<{
         { label: 'Ortalama Kalori', value: Math.round(meals.reduce((sum, meal) => sum + meal.calories, 0) / meals.length) }
       ]
     }
-  };
+  }), [surgeries, doctors, meals]);
 
   const content = summaryContents[type];
 
@@ -544,7 +559,8 @@ const SummaryModal: React.FC<{
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-300"
+              className="text-white hover:text-gray-300 transition-colors"
+              aria-label="Kapat"
             >
               <X className="h-5 w-5" />
             </button>
@@ -564,7 +580,7 @@ const SummaryModal: React.FC<{
           <div className="mt-6">
             <button
               onClick={onClose}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95"
             >
               Kapat
             </button>
@@ -596,7 +612,8 @@ const ListViewModal: React.FC<{
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-300"
+              className="text-white hover:text-gray-300 transition-colors"
+              aria-label="Kapat"
             >
               <X className="h-5 w-5" />
             </button>
@@ -683,7 +700,7 @@ const ListViewModal: React.FC<{
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95"
           >
             Kapat
           </button>
@@ -695,50 +712,65 @@ const ListViewModal: React.FC<{
 
 // DOKTOR KARTI COMPONENTI
 const DoctorCard: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
+  const initials = doctor.name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+  const getDayName = (day: string) => {
+    switch (day) {
+      case 'monday': return 'Pzt';
+      case 'tuesday': return 'Sal';
+      case 'wednesday': return 'Çar';
+      case 'thursday': return 'Per';
+      case 'friday': return 'Cum';
+      case 'saturday': return 'Cmt';
+      case 'sunday': return 'Paz';
+      default: return day;
+    }
+  };
+
   return (
     <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">
-              {doctor.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              {initials}
             </span>
           </div>
-          <div>
-            <h4 className="font-medium text-gray-900">{doctor.name} {doctor.surname}</h4>
-            <p className="text-sm text-gray-600">{doctor.specialty}</p>
+          <div className="min-w-0">
+            <h4 className="font-medium text-gray-900 truncate">{doctor.name} {doctor.surname}</h4>
+            <p className="text-sm text-gray-600 truncate">{doctor.specialty}</p>
             {doctor.title && (
-              <p className="text-xs text-blue-600 mt-1">{doctor.title}</p>
+              <p className="text-xs text-blue-600 mt-1 truncate">{doctor.title}</p>
             )}
             <div className="flex flex-wrap gap-2 mt-2">
               {doctor.email && (
                 <span className="inline-flex items-center text-xs text-gray-500">
-                  <Mail className="h-3 w-3 mr-1" />
-                  {doctor.email}
+                  <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <span className="truncate">{doctor.email}</span>
                 </span>
               )}
               {doctor.phone && (
                 <span className="inline-flex items-center text-xs text-gray-500">
-                  <Phone className="h-3 w-3 mr-1" />
-                  {doctor.phone}
+                  <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <span className="truncate">{doctor.phone}</span>
                 </span>
               )}
               {doctor.department && (
                 <span className="inline-flex items-center text-xs text-gray-500">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  {doctor.department}
+                  <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <span className="truncate">{doctor.department}</span>
                 </span>
               )}
             </div>
           </div>
         </div>
-        <div className="flex flex-col items-end">
+        <div className="flex flex-col items-end flex-shrink-0">
           <span className={`text-xs px-2 py-1 rounded-full mb-2 ${
             doctor.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
           }`}>
             {doctor.isActive ? 'Aktif' : 'Pasif'}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 truncate max-w-[100px]">
             Lisans: {doctor.licenseNumber}
           </span>
         </div>
@@ -749,14 +781,8 @@ const DoctorCard: React.FC<{ doctor: Doctor }> = ({ doctor }) => {
           <p className="text-xs font-medium text-gray-700 mb-1">Çalışma Saatleri:</p>
           <div className="flex flex-wrap gap-1">
             {doctor.schedule.slice(0, 3).map((schedule, idx) => (
-              <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                {schedule.day === 'monday' ? 'Pzt' :
-                 schedule.day === 'tuesday' ? 'Sal' :
-                 schedule.day === 'wednesday' ? 'Çar' :
-                 schedule.day === 'thursday' ? 'Per' :
-                 schedule.day === 'friday' ? 'Cum' :
-                 schedule.day === 'saturday' ? 'Cmt' : 'Paz'}
-                : {schedule.startTime}-{schedule.endTime}
+              <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded truncate">
+                {getDayName(schedule.day)}: {schedule.startTime}-{schedule.endTime}
               </span>
             ))}
             {doctor.schedule.length > 3 && (
@@ -784,36 +810,129 @@ const Anasayfa: React.FC = () => {
   const [weatherLoading, setWeatherLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    const todayPlan = dataService.getTodayPlan();
-    setDailyPlan(todayPlan);
-    
-    const loadedDoctors = dataService.getDoctors();
-    setDoctors(loadedDoctors);
-    
-    // Bursa hava durumu verilerini çek
-    fetchBursaWeather();
-    
-    // Her 15 dakikada bir hava durumunu güncelle
-    const interval = setInterval(fetchBursaWeather, 15 * 60 * 1000);
-    return () => clearInterval(interval);
+  const formattedDate = useMemo(() => {
+    const today = new Date();
+    return today.toLocaleDateString('tr-TR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   }, []);
 
-  const fetchBursaWeather = async () => {
+  const meals = useMemo(() => {
+    const defaultMeals: Meal[] = [
+      {
+        id: '1',
+        type: 'breakfast',
+        name: 'Kahvaltı',
+        items: ['Peynir, Zeytin, Domates, Salatalık', 'Bal/Tahin-Pekmez', 'Süt', 'Haşlanmış Yumurta'],
+        calories: 450,
+        dietType: 'normal',
+        mealTime: '08:00',
+        patientCount: 120
+      },
+      {
+        id: '2',
+        type: 'lunch',
+        name: 'Öğle Yemeği',
+        items: ['Mercimek Çorbası', 'Izgara Tavuk', 'Bulgur Pilavı', 'Yoğurt', 'Mevsim Salata'],
+        calories: 650,
+        dietType: 'normal',
+        mealTime: '12:30',
+        patientCount: 150
+      },
+      {
+        id: '3',
+        type: 'dinner',
+        name: 'Akşam Yemeği',
+        items: ['Sebze Çorbası', 'Fırın Balık', 'Zeytinyağlı Taze Fasulye', 'Cacık', 'Meyve'],
+        calories: 550,
+        dietType: 'normal',
+        mealTime: '18:00',
+        patientCount: 100
+      }
+    ];
+    return dailyPlan?.meals || defaultMeals;
+  }, [dailyPlan]);
+
+  const surgeries = useMemo(() => {
+    const defaultSurgeries: Surgery[] = [
+      {
+        id: '1',
+        doctorId: 'doc-1',
+        doctorName: 'Ahmet Yılmaz',
+        doctorSpecialty: 'Katarakt',
+        patientId: 'pat-1',
+        patientName: 'Mehmet Demir',
+        surgeryType: 'Katarakt Ameliyatı',
+        duration: 45,
+        startTime: '09:00',
+        endTime: '09:45',
+        room: 'A-1',
+        roomType: 'operating',
+        status: 'completed',
+        priority: 'normal',
+        requiredMaterials: []
+      },
+      {
+        id: '2',
+        doctorId: 'doc-2',
+        doctorName: 'Ayşe Kaya',
+        doctorSpecialty: 'Glokom',
+        patientId: 'pat-2',
+        patientName: 'Fatma Çelik',
+        surgeryType: 'Glokom Cerrahisi',
+        duration: 90,
+        startTime: '10:30',
+        endTime: '12:00',
+        room: 'A-2',
+        roomType: 'operating',
+        status: 'in-progress',
+        priority: 'normal',
+        requiredMaterials: []
+      },
+      {
+        id: '3',
+        doctorId: 'doc-3',
+        doctorName: 'Mehmet Demir',
+        doctorSpecialty: 'Retina',
+        patientId: 'pat-3',
+        patientName: 'Ali Yılmaz',
+        surgeryType: 'Retina Cerrahisi',
+        duration: 120,
+        startTime: '14:00',
+        endTime: '16:00',
+        room: 'A-3',
+        roomType: 'operating',
+        status: 'scheduled',
+        priority: 'normal',
+        requiredMaterials: []
+      }
+    ];
+    return dailyPlan?.surgeries || defaultSurgeries;
+  }, [dailyPlan]);
+
+  // Yetki kontrolleri
+  const isSystemAdmin = user?.role === 'admin';
+  const isManager = user?.role === 'manager';
+  const canAddMealOrSurgery = isSystemAdmin || isManager;
+  const canAddDoctor = isSystemAdmin;
+
+  const fetchBursaWeather = useCallback(async () => {
     try {
       setWeatherLoading(true);
-      // Burada gerçek bir hava durumu API'si kullanılabilir
-      // Örnek olarak mock veri kullanıyoruz
+      // Mock weather data
       const mockWeatherData = {
         location: 'Bursa, Türkiye',
-        temperature: Math.floor(Math.random() * 10) + 10, // 10-20°C arası
-        feelsLike: Math.floor(Math.random() * 8) + 12, // 12-20°C arası
-        humidity: Math.floor(Math.random() * 40) + 40, // %40-80
-        windSpeed: Math.floor(Math.random() * 15) + 5, // 5-20 km/h
+        temperature: Math.floor(Math.random() * 10) + 10,
+        feelsLike: Math.floor(Math.random() * 8) + 12,
+        humidity: Math.floor(Math.random() * 40) + 40,
+        windSpeed: Math.floor(Math.random() * 15) + 5,
         condition: ['Güneşli', 'Parçalı Bulutlu', 'Bulutlu', 'Az Bulutlu'][Math.floor(Math.random() * 4)],
         icon: 'cloud-sun',
-        precipitation: Math.floor(Math.random() * 30), // 0-30 mm
-        pressure: 1015 + Math.floor(Math.random() * 10), // 1015-1025 hPa
+        precipitation: Math.floor(Math.random() * 30),
+        pressure: 1015 + Math.floor(Math.random() * 10),
         sunrise: '07:30',
         sunset: '18:45',
         lastUpdated: new Date().toLocaleTimeString('tr-TR', { 
@@ -821,10 +940,6 @@ const Anasayfa: React.FC = () => {
           minute: '2-digit' 
         })
       };
-      
-      // Gerçek API kullanımı için:
-      // const response = await fetch('https://api.openweathermap.org/data/2.5/weather?q=Bursa,TR&appid=YOUR_API_KEY&units=metric&lang=tr');
-      // const data = await response.json();
       
       setTimeout(() => {
         setWeatherData(mockWeatherData);
@@ -835,9 +950,9 @@ const Anasayfa: React.FC = () => {
       console.error('Hava durumu verisi alınamadı:', error);
       setWeatherLoading(false);
     }
-  };
+  }, []);
 
-  const getWeatherIcon = (iconName: string) => {
+  const getWeatherIcon = useCallback((iconName: string) => {
     switch (iconName) {
       case 'sun':
         return <Sun className="h-8 w-8 text-yellow-500" />;
@@ -850,118 +965,27 @@ const Anasayfa: React.FC = () => {
       default:
         return <CloudSun className="h-8 w-8 text-orange-500" />;
     }
-  };
+  }, []);
 
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString('tr-TR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  const defaultMeals: Meal[] = [
-    {
-      id: '1',
-      type: 'breakfast',
-      name: 'Kahvaltı',
-      items: ['Peynir, Zeytin, Domates, Salatalık', 'Bal/Tahin-Pekmez', 'Süt', 'Haşlanmış Yumurta'],
-      calories: 450,
-      dietType: 'normal',
-      mealTime: '08:00',
-      patientCount: 120
-    },
-    {
-      id: '2',
-      type: 'lunch',
-      name: 'Öğle Yemeği',
-      items: ['Mercimek Çorbası', 'Izgara Tavuk', 'Bulgur Pilavı', 'Yoğurt', 'Mevsim Salata'],
-      calories: 650,
-      dietType: 'normal',
-      mealTime: '12:30',
-      patientCount: 150
-    },
-    {
-      id: '3',
-      type: 'dinner',
-      name: 'Akşam Yemeği',
-      items: ['Sebze Çorbası', 'Fırın Balık', 'Zeytinyağlı Taze Fasulye', 'Cacık', 'Meyve'],
-      calories: 550,
-      dietType: 'normal',
-      mealTime: '18:00',
-      patientCount: 100
-    }
-  ];
-
-  const defaultSurgeries: Surgery[] = [
-    {
-      id: '1',
-      doctorId: 'doc-1',
-      doctorName: 'Ahmet Yılmaz',
-      doctorSpecialty: 'Katarakt',
-      patientId: 'pat-1',
-      patientName: 'Mehmet Demir',
-      surgeryType: 'Katarakt Ameliyatı',
-      duration: 45,
-      startTime: '09:00',
-      endTime: '09:45',
-      room: 'A-1',
-      roomType: 'operating',
-      status: 'completed',
-      priority: 'normal',
-      requiredMaterials: []
-    },
-    {
-      id: '2',
-      doctorId: 'doc-2',
-      doctorName: 'Ayşe Kaya',
-      doctorSpecialty: 'Glokom',
-      patientId: 'pat-2',
-      patientName: 'Fatma Çelik',
-      surgeryType: 'Glokom Cerrahisi',
-      duration: 90,
-      startTime: '10:30',
-      endTime: '12:00',
-      room: 'A-2',
-      roomType: 'operating',
-      status: 'in-progress',
-      priority: 'normal',
-      requiredMaterials: []
-    },
-    {
-      id: '3',
-      doctorId: 'doc-3',
-      doctorName: 'Mehmet Demir',
-      doctorSpecialty: 'Retina',
-      patientId: 'pat-3',
-      patientName: 'Ali Yılmaz',
-      surgeryType: 'Retina Cerrahisi',
-      duration: 120,
-      startTime: '14:00',
-      endTime: '16:00',
-      room: 'A-3',
-      roomType: 'operating',
-      status: 'scheduled',
-      priority: 'normal',
-      requiredMaterials: []
-    }
-  ];
-
-  const meals = dailyPlan?.meals || defaultMeals;
-  const surgeries = dailyPlan?.surgeries || defaultSurgeries;
-
-  // Yetki kontrolleri
-  const isSystemAdmin = user?.role === 'admin';
-  const isManager = user?.role === 'manager';
-  const canAddMealOrSurgery = isSystemAdmin || isManager;
-  const canAddDoctor = isSystemAdmin;
-
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     const todayPlan = dataService.getTodayPlan();
     setDailyPlan(todayPlan);
     const loadedDoctors = dataService.getDoctors();
     setDoctors(loadedDoctors);
-  };
+  }, []);
+
+  useEffect(() => {
+    const todayPlan = dataService.getTodayPlan();
+    setDailyPlan(todayPlan);
+    
+    const loadedDoctors = dataService.getDoctors();
+    setDoctors(loadedDoctors);
+    
+    fetchBursaWeather();
+    
+    const interval = setInterval(fetchBursaWeather, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchBursaWeather]);
 
   return (
     <div className="space-y-6">
@@ -971,14 +995,14 @@ const Anasayfa: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold mb-2">Anasayfa</h1>
             <p className="text-blue-200">Osmangazi Göz Stok Takip Sistemine Hoşgeldiniz</p>
-            <div className="flex items-center space-x-4 mt-4">
+            <div className="flex items-center flex-wrap gap-4 mt-4">
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-4 w-4 flex-shrink-0" />
                 <span className="text-sm">{formattedDate}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <UserCheck className="h-4 w-4" />
-                <span className="text-sm">{user?.name} - {user?.role === 'admin' ? 'Sistem Yöneticisi' : 
+                <UserCheck className="h-4 w-4 flex-shrink-0" />
+                <span className="text-sm truncate">{user?.name} - {user?.role === 'admin' ? 'Sistem Yöneticisi' : 
                   user?.role === 'manager' ? 'Yönetici' : 
                   user?.role === 'doctor' ? 'Doktor' : user?.role}</span>
               </div>
@@ -992,11 +1016,14 @@ const Anasayfa: React.FC = () => {
         </div>
       </div>
 
-      {/* Hızlı Durum Kartları - YEMEK HİZMETİ KARTI KALDIRILDI */}
+      {/* Hızlı Durum Kartları */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div 
-          className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-5 text-white shadow-md hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-0.5"
+          className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-5 text-white shadow-md hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-0.5 active:scale-95"
           onClick={() => setShowSummaryModal('surgery')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setShowSummaryModal('surgery')}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg">Toplam Ameliyat</h3>
@@ -1013,8 +1040,11 @@ const Anasayfa: React.FC = () => {
         </div>
 
         <div 
-          className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-xl p-5 text-white shadow-md hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-0.5"
+          className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-xl p-5 text-white shadow-md hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-0.5 active:scale-95"
           onClick={() => setShowSummaryModal('doctor')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setShowSummaryModal('doctor')}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg">Toplam Doktor</h3>
@@ -1058,20 +1088,20 @@ const Anasayfa: React.FC = () => {
               
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center space-x-2">
-                  <Thermometer className="h-4 w-4 opacity-80" />
-                  <span>Hissedilen: {weatherData.feelsLike}°C</span>
+                  <Thermometer className="h-4 w-4 opacity-80 flex-shrink-0" />
+                  <span className="truncate">Hissedilen: {weatherData.feelsLike}°C</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Droplets className="h-4 w-4 opacity-80" />
-                  <span>Nem: {weatherData.humidity}%</span>
+                  <Droplets className="h-4 w-4 opacity-80 flex-shrink-0" />
+                  <span className="truncate">Nem: {weatherData.humidity}%</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Wind className="h-4 w-4 opacity-80" />
-                  <span>Rüzgar: {weatherData.windSpeed} km/h</span>
+                  <Wind className="h-4 w-4 opacity-80 flex-shrink-0" />
+                  <span className="truncate">Rüzgar: {weatherData.windSpeed} km/h</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <CloudRain className="h-4 w-4 opacity-80" />
-                  <span>Yağış: {weatherData.precipitation} mm</span>
+                  <CloudRain className="h-4 w-4 opacity-80 flex-shrink-0" />
+                  <span className="truncate">Yağış: {weatherData.precipitation} mm</span>
                 </div>
               </div>
               
@@ -1090,7 +1120,7 @@ const Anasayfa: React.FC = () => {
               <p className="opacity-90">Hava durumu bilgisi alınamadı</p>
               <button 
                 onClick={fetchBursaWeather}
-                className="mt-2 text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors"
+                className="mt-2 text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors active:scale-95"
               >
                 Tekrar Dene
               </button>
@@ -1103,7 +1133,7 @@ const Anasayfa: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sol Taraf: Yemek Listesi ve Ameliyat */}
         <div className="space-y-6">
-          {/* Yemek Listesi - Sistem Yöneticisi ve Yönetici ekleyebilir */}
+          {/* Yemek Listesi */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
@@ -1123,7 +1153,7 @@ const Anasayfa: React.FC = () => {
                     type: 'meal',
                     data: meals
                   })}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors active:scale-95"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Detaylı Liste
@@ -1131,7 +1161,7 @@ const Anasayfa: React.FC = () => {
                 {canAddMealOrSurgery && (
                   <button
                     onClick={() => setShowAddModal('meal')}
-                    className="text-sm font-medium text-green-600 hover:text-green-800 flex items-center transition-colors"
+                    className="text-sm font-medium text-green-600 hover:text-green-800 flex items-center transition-colors active:scale-95"
                     title="Yemek ekle (Excel veya Manuel)"
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -1153,15 +1183,15 @@ const Anasayfa: React.FC = () => {
                       }`}>
                         <UtensilsCrossed className="h-4 w-4" />
                       </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 capitalize">
+                      <div className="min-w-0">
+                        <h4 className="font-medium text-gray-900 truncate capitalize">
                           {meal.type === 'breakfast' ? 'Kahvaltı' : 
                            meal.type === 'lunch' ? 'Öğle Yemeği' : 'Akşam Yemeği'}
                         </h4>
-                        <p className="text-xs text-gray-600">{meal.mealTime} • {meal.patientCount} hasta</p>
+                        <p className="text-xs text-gray-600 truncate">{meal.mealTime} • {meal.patientCount} hasta</p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <div className="font-bold text-gray-900">{meal.calories} kcal</div>
                       {canAddMealOrSurgery && (
                         <div className="flex space-x-1 mt-1">
@@ -1178,7 +1208,7 @@ const Anasayfa: React.FC = () => {
             </div>
           </div>
 
-          {/* Ameliyat Planlaması - Sistem Yöneticisi ve Yönetici ekleyebilir */}
+          {/* Ameliyat Planlaması */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
@@ -1196,7 +1226,7 @@ const Anasayfa: React.FC = () => {
                     type: 'surgery',
                     data: surgeries
                   })}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors active:scale-95"
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Liste Görüntüle
@@ -1204,7 +1234,7 @@ const Anasayfa: React.FC = () => {
                 {canAddMealOrSurgery && (
                   <button
                     onClick={() => setShowAddModal('surgery')}
-                    className="text-sm font-medium text-green-600 hover:text-green-800 flex items-center transition-colors"
+                    className="text-sm font-medium text-green-600 hover:text-green-800 flex items-center transition-colors active:scale-95"
                     title="Ameliyat ekle (Excel veya Manuel)"
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -1219,13 +1249,13 @@ const Anasayfa: React.FC = () => {
                 <div key={surgery.id} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <StethoscopeIcon className="h-4 w-4 text-gray-400" />
-                      <div>
+                      <StethoscopeIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <div className="min-w-0">
                         <h4 className="font-medium text-gray-900 truncate">{surgery.surgeryType}</h4>
-                        <p className="text-xs text-gray-600">Dr. {surgery.doctorName} • {surgery.patientName}</p>
+                        <p className="text-xs text-gray-600 truncate">Dr. {surgery.doctorName} • {surgery.patientName}</p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <div className="font-medium text-gray-900">{surgery.startTime}</div>
                       <span className={`text-xs px-2 py-1 rounded-full ${
                         surgery.status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -1253,7 +1283,7 @@ const Anasayfa: React.FC = () => {
 
         {/* Sağ Taraf: Doktorlar ve Sistem Durumu */}
         <div className="space-y-6">
-          {/* Doktorlar - Tüm kullanıcılar görüntüleyebilir, sadece Sistem Yöneticisi ekleyebilir */}
+          {/* Doktorlar */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
@@ -1271,7 +1301,7 @@ const Anasayfa: React.FC = () => {
                     type: 'doctor',
                     data: doctors
                   })}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors active:scale-95"
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Liste Görüntüle
@@ -1279,7 +1309,7 @@ const Anasayfa: React.FC = () => {
                 {canAddDoctor && (
                   <button
                     onClick={() => setShowAddModal('doctor')}
-                    className="text-sm font-medium text-green-600 hover:text-green-800 flex items-center transition-colors"
+                    className="text-sm font-medium text-green-600 hover:text-green-800 flex items-center transition-colors active:scale-95"
                     title="Doktor ekle (Excel veya Manuel)"
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -1310,7 +1340,7 @@ const Anasayfa: React.FC = () => {
               </div>
               <button
                 onClick={() => window.open('/logs', '_blank')}
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors active:scale-95"
               >
                 <Clock className="h-4 w-4 mr-2" />
                 Detaylı Log
@@ -1318,7 +1348,7 @@ const Anasayfa: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Aktif Oturumlar</p>
@@ -1333,7 +1363,7 @@ const Anasayfa: React.FC = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Bugünkü İşlemler</p>
@@ -1348,7 +1378,7 @@ const Anasayfa: React.FC = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Veri Boyutu</p>
@@ -1363,7 +1393,7 @@ const Anasayfa: React.FC = () => {
                 </div>
               </div>
               
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Hata Sayısı</p>
@@ -1391,6 +1421,9 @@ const Anasayfa: React.FC = () => {
           <div 
             className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 cursor-pointer hover:bg-gray-50 transition-colors group"
             onClick={() => setShowSystemStatus(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && setShowSystemStatus(true)}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
