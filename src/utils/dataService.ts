@@ -1955,13 +1955,14 @@ class DataService {
   }
 
   getMaterialByBarcode(barcode: string): Material | undefined {
+    const cleanBarcode = barcode.trim();
     return this.materials.find(m => 
-      m.barcode === barcode ||
-      m.gtin === barcode ||
-      m.sn === barcode ||
-      m.udiCode === barcode ||
-      m.allBarcode === barcode ||
-      (m.allBarcode && m.allBarcode.split(',').map(b => b.trim()).includes(barcode))
+      m.barcode === cleanBarcode ||
+      m.gtin === cleanBarcode ||
+      m.sn === cleanBarcode ||
+      m.udiCode === cleanBarcode ||
+      m.allBarcode === cleanBarcode ||
+      (m.allBarcode && m.allBarcode.split(',').map(b => b.trim()).includes(cleanBarcode))
     );
   }
 
@@ -3017,33 +3018,40 @@ class DataService {
 
     try {
       if (allBarcode.startsWith('01') && allBarcode.length >= 30) {
-        // GTIN kısmını al (14 haneli)
-        const gtinStart = 2;
-        const gtinEnd = 16;
-        parsed.gtin = allBarcode.substring(gtinStart, gtinEnd);
+        // 1. GTIN'i al (01'den sonraki 14 karakter)
+        if (allBarcode.length >= 16) {
+          parsed.gtin = allBarcode.substring(2, 16); // Pozisyon 2-15 (14 karakter)
+          
+          // Barkod kısmı - GTIN'in ilk 2 sıfırını çıkar
+          parsed.barcode = parsed.gtin.startsWith('0') ? parsed.gtin.substring(1) : parsed.gtin;
+        }
         
-        // Barkod kısmı - GTIN'in ilk 2 sıfırını çıkar
-        parsed.barcode = parsed.gtin.substring(2);
-        
-        // SN kısmını ara (21'den sonra başlar)
-        const snMarker = allBarcode.indexOf('21');
-        if (snMarker !== -1) {
-          const snStart = snMarker + 2;
-          let snEnd = allBarcode.length;
-          for (let i = snStart + 2; i < allBarcode.length - 1; i += 2) {
-            if (allBarcode.substring(i, i + 2) === '10' || 
-                allBarcode.substring(i, i + 2) === '17' || 
-                allBarcode.substring(i, i + 2) === '91') {
-              snEnd = i;
-              break;
+        // 2. SN'yi bul (21'den sonra)
+        const snIndex = allBarcode.indexOf('21');
+        if (snIndex !== -1 && snIndex + 2 < allBarcode.length) {
+          const afterSN = allBarcode.substring(snIndex + 2);
+          
+          // SN'yi al, bir sonraki AI'ya kadar veya string sonuna kadar
+          let snValue = '';
+          for (let i = 0; i < afterSN.length; i++) {
+            // Eğer sonraki 2 karakter bir AI başlangıcı ise dur (01, 10, 11, 17, 30, 91)
+            if (i + 2 <= afterSN.length) {
+              const possibleAI = afterSN.substring(i, i + 2);
+              if (['01', '10', '11', '17', '30', '91'].includes(possibleAI)) {
+                break;
+              }
             }
+            snValue += afterSN[i];
           }
-          parsed.sn = allBarcode.substring(snStart, snEnd);
+          
+          parsed.sn = snValue.replace(/[^a-zA-Z0-9]/g, '');
         }
       } else {
         // Standart barkod
         parsed.barcode = allBarcode;
       }
+      
+      console.log('DataService Parse:', { allBarcode, parsed });
     } catch (error) {
       console.error('All Barkod parse error:', error);
       parsed.barcode = allBarcode;
