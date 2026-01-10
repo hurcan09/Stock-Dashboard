@@ -3,7 +3,56 @@ import { Plus, Search, Trash2, ClipboardList, Eye, Filter, Barcode, Package, Use
 import { StockCount, Material, StockCountSession, MaterialStatus, SessionSummary } from '../types';
 import { dataService } from "../utils/dataService";
 
-// Hızlı Sayım Modal Component'i
+// All Barkod parse fonksiyonu - GÜNCELLENMİŞ VERSİYON
+const parseAllBarcodeEnhanced = (allBarcode: string) => {
+  console.log('All Barcode parse ediliyor:', allBarcode);
+  
+  // Format: 01{GTIN}17{Tarih}21{SN}30{SN uzunluğu}
+  // Örnek: "0100380652555579172810132125734029151301"
+  
+  let barcode = '';
+  let gtin = '';
+  let sn = '';
+  
+  try {
+    if (allBarcode.startsWith('01') && allBarcode.length >= 30) {
+      // GTIN'i bul (01'den sonraki 14 karakter)
+      const gtinMatch = allBarcode.match(/^01(\d{14})/);
+      if (gtinMatch && gtinMatch[1]) {
+        gtin = gtinMatch[1];
+        // GTIN'den barkodu çıkar (ilk 0'ı atla)
+        barcode = gtin.startsWith('0') ? gtin.substring(1) : gtin;
+      }
+      
+      // SN'yi bul (21'den sonraki kısım)
+      const snStart = allBarcode.indexOf('21');
+      if (snStart !== -1) {
+        const snPart = allBarcode.substring(snStart + 2);
+        const snEnd = snPart.indexOf('30'); // SN'nin sonunu 30 ile belirle
+        if (snEnd !== -1) {
+          sn = snPart.substring(0, snEnd);
+        } else {
+          // Eğer 30 yoksa, kalan kısmın tamamını SN olarak al
+          sn = snPart;
+        }
+      }
+      
+      // SN kontrolü - sadece sayısal ve harf içermeli
+      if (sn) {
+        sn = sn.replace(/[^a-zA-Z0-9]/g, '');
+      }
+      
+      console.log('Parse sonucu:', { barcode, gtin, sn });
+      return { barcode, gtin, sn };
+    }
+  } catch (error) {
+    console.error('Barkod parse hatası:', error);
+  }
+  
+  return { barcode: allBarcode, gtin: '', sn: '' };
+};
+
+// Hızlı Sayım Modal Component'i - GÜNCELLENMİŞ
 function QuickCountModal({ 
   session, 
   onAdd, 
@@ -19,78 +68,106 @@ function QuickCountModal({
   const [showScanner, setShowScanner] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchAttempts, setSearchAttempts] = useState<string[]>([]);
+  const [lastProcessedSN, setLastProcessedSN] = useState<string>('');
 
   useEffect(() => {
-    // Her modal açıldığında güncel malzeme listesini al
     loadMaterials();
   }, []);
 
   const loadMaterials = () => {
     const allMaterials = dataService.getMaterials();
-    console.log('QuickCountModal - Yüklenen malzemeler:', allMaterials.length);
     setMaterials(allMaterials);
   };
 
-  // All Barkod'dan barkod, GTIN ve SN çıkarma fonksiyonu
-  const parseAllBarcode = (allBarcode: string) => {
-    return dataService.parseAllBarcode(allBarcode);
+  // Barkod numarasına göre malzeme bulma
+  const findMaterialByBarcode = (barcode: string) => {
+    return materials.find(m => 
+      m.barcode === barcode ||
+      m.gtin === barcode ||
+      m.udiCode === barcode ||
+      m.allBarcode === barcode ||
+      (m.allBarcode && m.allBarcode.split(',').map(b => b.trim()).includes(barcode))
+    );
   };
 
-  // Malzeme bulma fonksiyonu - GÜNCELLENDİ: Tüm alanlara bakıyor
-  const findMaterialByCode = (code: string, filteredMaterials: Material[]) => {
-    console.log(`Aranan kod: ${code}`);
-    
-    // Kodun kendisi SN olabilir
-    let material = filteredMaterials.find(m => m.sn === code);
-    
-    // Kod barkod olabilir
-    if (!material) {
-      material = filteredMaterials.find(m => m.barcode === code);
-    }
-    
-    // Kod GTIN olabilir
-    if (!material) {
-      material = filteredMaterials.find(m => m.gtin === code);
-    }
-    
-    // Kod UDI Code olabilir
-    if (!material) {
-      material = filteredMaterials.find(m => m.udiCode === code);
-    }
-    
-    // Kod All Barcode olabilir
-    if (!material) {
-      material = filteredMaterials.find(m => m.allBarcode === code);
-    }
-    
-    // All Barcode virgülle ayrılmış liste olabilir
-    if (!material) {
-      material = filteredMaterials.find(m => 
-        m.allBarcode && m.allBarcode.split(',').map(b => b.trim()).includes(code)
-      );
-    }
-    
-    // Sezgisel kod olabilir
-    if (!material) {
-      material = filteredMaterials.find(m => m.intuitiveCode === code);
-    }
-    
-    return material;
+  // SN numarasına göre malzeme bulma
+  const findMaterialBySN = (sn: string) => {
+    return materials.find(m => m.sn === sn);
   };
 
-  const handleBarcodeInput = (value: string) => {
+  // Barkod numarasına göre benzer malzeme bulma (temel bilgiler için)
+  const findSimilarMaterialByBarcode = (barcode: string) => {
+    return materials.find(m => 
+      m.barcode === barcode ||
+      m.gtin === barcode
+    );
+  };
+
+  // Yeni malzeme oluşturma fonksiyonu - GÜNCELLENMİŞ
+  const createNewMaterial = (parsedData: { barcode: string, gtin: string, sn: string }, baseMaterial?: Material) => {
+    const baseMaterialData = baseMaterial || {
+      name: `YENİ ÜRÜN - ${parsedData.barcode}`,
+      category: 'Diğer',
+      subCategory: '',
+      unit: 'adet',
+      unitPrice: 0,
+      currentStock: 0,
+      minStock: 0,
+      minStockLevel: 0,
+      supplier: '',
+      isActive: true,
+      status: session.sessionStatus || 'normal' as MaterialStatus,
+      expirationDate: '',
+      serialNoStatus: '',
+      materialDescription: '',
+      intuitiveCode: '',
+      serialNumber: parsedData.sn
+    };
+
+    const newMaterialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'> = {
+      ...baseMaterialData,
+      barcode: parsedData.barcode,
+      gtin: parsedData.gtin || baseMaterialData.gtin || '',
+      sn: parsedData.sn,
+      name: baseMaterial ? `${baseMaterial.name} (SN: ${parsedData.sn})` : `YENİ ÜRÜN - ${parsedData.barcode}`,
+      allBarcode: parsedData.barcode ? `01${parsedData.gtin || parsedData.barcode}17${new Date().toISOString().slice(2,10)}21${parsedData.sn}30${parsedData.sn.length}` : ''
+    };
+
+    const newMaterial = dataService.saveMaterial(newMaterialData);
+    
+    // Malzemeleri yenile
+    loadMaterials();
+    
+    return newMaterial;
+  };
+
+  // Konsinye kontrol fonksiyonu - YENİ
+  const checkConsignmentStatus = (material: Material, sessionStatus: MaterialStatus | undefined): boolean => {
+    // Eğer malzeme konsinye ise ve oturum faturalı sayım ise hata ver
+    if (material.status === 'konsinye' && sessionStatus === 'faturalı') {
+      return false;
+    }
+    return true;
+  };
+
+  const handleBarcodeInput = async (value: string) => {
     setBarcode(value);
     
     if (value.trim()) {
-      // Malzeme listesini yenile
       loadMaterials();
       
       let parsedData = { barcode: value, gtin: '', sn: '' };
       
       // All Barkod formatı mı kontrol et
       if (value.startsWith('01') && value.length >= 30) {
-        parsedData = parseAllBarcode(value);
-        console.log('All Barkod çözümlendi:', parsedData);
+        parsedData = parseAllBarcodeEnhanced(value);
+        
+        console.log('Parsed Data:', parsedData);
+        
+        // Eğer parse edilemediyse orijinal değeri kullan
+        if (!parsedData.barcode && !parsedData.gtin && !parsedData.sn) {
+          parsedData.barcode = value;
+        }
       }
       
       // Session'a göre filtrele
@@ -98,43 +175,106 @@ function QuickCountModal({
         !session.sessionStatus || m.status === session.sessionStatus
       );
       
-      console.log('Filtrelenmiş malzemeler:', filteredMaterials.length);
-      
-      // SN kontrolü: Eğer SN mevcutsa ve sistemde varsa ekleme
-      if (parsedData.sn) {
-        const existingMaterialWithSN = filteredMaterials.find(m => m.sn === parsedData.sn);
+      // 1. ÖNCE SN KONTROLÜ - GÜNCELLENDİ
+      if (parsedData.sn && parsedData.sn.trim() !== '') {
+        const existingMaterialWithSN = findMaterialBySN(parsedData.sn);
+        
         if (existingMaterialWithSN) {
-          alert(`SN ${parsedData.sn} zaten sistemde kayıtlı! Malzeme: ${existingMaterialWithSN.name}`);
+          // Konsinye kontrolü
+          if (!checkConsignmentStatus(existingMaterialWithSN, session.sessionStatus)) {
+            alert(`SN ${parsedData.sn} numaralı ürün Konsinye'dir. Faturalı Sayıma eklenemez!\nLütfen Malzeme Yönetimine girip SN kodlu ürünün statüsünü Faturalı yapın.`);
+            setBarcode('');
+            return;
+          }
+          
+          // Oturum statüsü kontrolü
+          if (session.sessionStatus && existingMaterialWithSN.status !== session.sessionStatus) {
+            alert(`SN ${parsedData.sn} zaten sistemde kayıtlı ancak bu oturum statüsüne uygun değil!\nMalzeme statüsü: ${existingMaterialWithSN.status}`);
+            setBarcode('');
+            return;
+          }
+          
+          // Uygun malzeme bulundu, stoğu güncelle
+          const existingIndex = countedItems.findIndex(item => item.material.id === existingMaterialWithSN.id);
+          
+          if (existingIndex >= 0) {
+            const newItems = [...countedItems];
+            newItems[existingIndex].quantity += 1;
+            setCountedItems(newItems);
+          } else {
+            setCountedItems([...countedItems, { material: existingMaterialWithSN, quantity: 1 }]);
+          }
+          
+          setLastProcessedSN(parsedData.sn);
           setBarcode('');
+          
+          // Otomatik bilgi getir
+          alert(`SN ${parsedData.sn} bulundu:\nMalzeme: ${existingMaterialWithSN.name}\nStok: ${existingMaterialWithSN.currentStock}`);
           return;
         }
       }
       
-      // Malzemeyi bul - GÜNCELLENDİ: Tüm alanlara bak
-      let material = findMaterialByCode(value, filteredMaterials);
+      // 2. BARKOD/GTIN İLE ARA
+      let material: Material | undefined;
       
-      // Eğer All Barkod parse edildiyse ve malzeme bulunamadıysa, parse edilmiş barkod ile de ara
-      if (!material && parsedData.barcode && parsedData.barcode !== value) {
-        console.log('Parsed barkod ile ara:', parsedData.barcode);
-        material = findMaterialByCode(parsedData.barcode, filteredMaterials);
+      if (parsedData.barcode && parsedData.barcode.trim() !== '') {
+        material = findMaterialByBarcode(parsedData.barcode);
       }
       
-      // Parse edilmiş GTIN ile ara
-      if (!material && parsedData.gtin) {
-        console.log('Parsed GTIN ile ara:', parsedData.gtin);
-        material = findMaterialByCode(parsedData.gtin, filteredMaterials);
+      if (!material && parsedData.gtin && parsedData.gtin.trim() !== '') {
+        material = findMaterialByBarcode(parsedData.gtin);
       }
       
-      // Parse edilmiş SN ile ara
-      if (!material && parsedData.sn) {
-        console.log('Parsed SN ile ara:', parsedData.sn);
-        material = findMaterialByCode(parsedData.sn, filteredMaterials);
-      }
-      
+      // 3. BARKOD VAR AMA SN YOKSA KONTROL ET
       if (material) {
-        console.log('Malzeme bulundu:', material.name, 'Barkod:', material.barcode, 'SN:', material.sn);
+        // Konsinye kontrolü
+        if (!checkConsignmentStatus(material, session.sessionStatus)) {
+          alert(`Barkod ${parsedData.barcode} Konsinye üründür. Bu Sayıma eklenemez!`);
+          setBarcode('');
+          return;
+        }
         
-        const existingIndex = countedItems.findIndex(item => item.material.id === material.id);
+        // Barkod bulundu, ancak SN farklı ise YENİ malzeme oluştur
+        if (parsedData.sn && parsedData.sn.trim() !== '' && parsedData.sn !== material.sn) {
+          // Bu barkod için benzer malzeme ara (temel bilgiler için)
+          const similarMaterial = findSimilarMaterialByBarcode(parsedData.barcode || parsedData.gtin);
+          
+          // SN ile malzeme var mı kontrol et
+          const existingMaterialWithSN = findMaterialBySN(parsedData.sn);
+          if (existingMaterialWithSN) {
+            // Aynı SN var, onu kullan
+            if (!checkConsignmentStatus(existingMaterialWithSN, session.sessionStatus)) {
+              alert(`SN ${parsedData.sn} numaralı ürün Konsinye'dir. Faturalı Sayıma eklenemez!`);
+              setBarcode('');
+              return;
+            }
+            
+            const existingIndex = countedItems.findIndex(item => item.material.id === existingMaterialWithSN.id);
+            if (existingIndex >= 0) {
+              const newItems = [...countedItems];
+              newItems[existingIndex].quantity += 1;
+              setCountedItems(newItems);
+            } else {
+              setCountedItems([...countedItems, { material: existingMaterialWithSN, quantity: 1 }]);
+            }
+            setLastProcessedSN(parsedData.sn);
+            setBarcode('');
+            return;
+          }
+          
+          const newMaterial = createNewMaterial(parsedData, similarMaterial || material);
+          material = newMaterial;
+        }
+        
+        // Oturum statüsü kontrolü
+        if (session.sessionStatus && material.status !== session.sessionStatus) {
+          alert(`"${material.name}" malzemesi bu oturum statüsüne uygun değil! Malzeme statüsü: ${material.status}`);
+          setBarcode('');
+          return;
+        }
+        
+        // Malzemeyi sayım listesine ekle
+        const existingIndex = countedItems.findIndex(item => item.material.id === material!.id);
         
         if (existingIndex >= 0) {
           const newItems = [...countedItems];
@@ -144,17 +284,61 @@ function QuickCountModal({
           setCountedItems([...countedItems, { material, quantity: 1 }]);
         }
         
+        setLastProcessedSN(material.sn || parsedData.sn);
         setBarcode('');
-      } else {
-        console.log('Malzeme bulunamadı. Arama girişimi kaydedildi:', value);
-        setSearchAttempts(prev => [...prev, value]);
         
-        alert(`"${value}" kodu ile eşleşen malzeme bulunamadı veya bu malzeme statüsü bu oturum için uygun değil.\n\n` +
-              `Lütfen kontrol edin:\n` +
-              `1. Malzeme Yönetimi'nde bu koda sahip malzeme var mı?\n` +
-              `2. Malzeme statüsü oturum statüsü ile uyumlu mu?\n` +
-              `3. Kod doğru girildi mi?`);
-        setBarcode('');
+        // Otomatik bilgi getir
+        alert(`Barkod ${parsedData.barcode} bulundu:\nMalzeme: ${material.name}\nStok: ${material.currentStock}`);
+      } else {
+        // 4. MALZEME BULUNAMADI, YENİ MALZEME OLUŞTUR
+        if (parsedData.barcode || parsedData.gtin || parsedData.sn) {
+          // Benzer barkodlu malzeme ara (temel bilgiler için)
+          const similarMaterial = findSimilarMaterialByBarcode(parsedData.barcode || parsedData.gtin || '');
+          
+          // SN kontrolü - eğer SN varsa ve sistemde yoksa
+          if (parsedData.sn && parsedData.sn.trim() !== '') {
+            const existingMaterialWithSN = findMaterialBySN(parsedData.sn);
+            if (existingMaterialWithSN) {
+              // SN zaten varsa, onu kullan
+              if (!checkConsignmentStatus(existingMaterialWithSN, session.sessionStatus)) {
+                alert(`SN ${parsedData.sn} numaralı ürün Konsinye'dir. Faturalı Sayıma eklenemez!`);
+                setBarcode('');
+                return;
+              }
+              
+              const existingIndex = countedItems.findIndex(item => item.material.id === existingMaterialWithSN.id);
+              if (existingIndex >= 0) {
+                const newItems = [...countedItems];
+                newItems[existingIndex].quantity += 1;
+                setCountedItems(newItems);
+              } else {
+                setCountedItems([...countedItems, { material: existingMaterialWithSN, quantity: 1 }]);
+              }
+              setLastProcessedSN(parsedData.sn);
+              setBarcode('');
+              return;
+            }
+          }
+          
+          const newMaterial = createNewMaterial(parsedData, similarMaterial);
+          
+          // Yeni malzemeyi sayım listesine ekle
+          setCountedItems([...countedItems, { material: newMaterial, quantity: 1 }]);
+          setLastProcessedSN(newMaterial.sn);
+          setBarcode('');
+          
+          alert(`Yeni malzeme oluşturuldu:\nAdı: ${newMaterial.name}\nBarkod: ${newMaterial.barcode}\nSN: ${newMaterial.sn}\nStok: ${newMaterial.currentStock}`);
+        } else {
+          console.log('Malzeme bulunamadı. Arama girişimi kaydedildi:', value);
+          setSearchAttempts(prev => [...prev, value]);
+          
+          alert(`"${value}" kodu ile eşleşen malzeme bulunamadı veya bu malzeme statüsü bu oturum için uygun değil.\n\n` +
+                `Lütfen kontrol edin:\n` +
+                `1. Malzeme Yönetimi'nde bu koda sahip malzeme var mı?\n` +
+                `2. Malzeme statüsü oturum statüsü ile uyumlu mu?\n` +
+                `3. Kod doğru girildi mi?`);
+          setBarcode('');
+        }
       }
     }
   };
@@ -189,7 +373,7 @@ function QuickCountModal({
       correctionNotes: ''
     }));
 
-    // MALZEMELERİN STOĞUNU GÜNCELLE
+    // MALZEMELERİN STOĞUNU GÜNCELLE - GÜNCELLENMİŞ
     countedItems.forEach(item => {
       const newStock = item.material.currentStock + item.quantity;
       dataService.updateMaterial(item.material.id, {
@@ -201,7 +385,7 @@ function QuickCountModal({
         action: 'STOK_GÜNCELLENDİ',
         module: 'STOK_TAKİP',
         recordId: item.material.barcode,
-        details: `${item.material.name} stoğu ${item.quantity} adet artırıldı. Yeni stok: ${newStock}`,
+        details: `${item.material.name} (SN: ${item.material.sn}) stoğu ${item.quantity} adet artırıldı. Yeni stok: ${newStock}`,
         performedBy: dataService.getCurrentUser().name,
       });
     });
@@ -233,7 +417,6 @@ function QuickCountModal({
   };
 
   const handleManualSearch = () => {
-    // Manuel arama için modal
     const searchCode = prompt('Aramak istediğiniz Barkod/GTIN/SN/UDI/All Barcode kodunu girin:');
     if (searchCode && searchCode.trim()) {
       handleBarcodeInput(searchCode.trim());
@@ -292,6 +475,11 @@ function QuickCountModal({
                   <p className="text-xs text-gray-500 mt-1">
                     Barkod, GTIN, SN, UDI Code veya All Barcode girebilirsiniz
                   </p>
+                  {lastProcessedSN && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Son işlenen SN: {lastProcessedSN}
+                    </p>
+                  )}
                 </div>
 
                 <button
@@ -405,6 +593,9 @@ function QuickCountModal({
                           <td className="py-2 px-4">
                             <div className="font-medium text-sm">{item.material.name}</div>
                             <div className="text-xs text-gray-600">{item.material.category}</div>
+                            {item.material.sn && (
+                              <div className="text-xs text-blue-600">SN: {item.material.sn}</div>
+                            )}
                           </td>
                           <td className="py-2 px-4 text-sm">
                             ₺{item.material.unitPrice.toFixed(2)}
@@ -681,22 +872,13 @@ export default function StockCountManagement() {
   }, []);
 
   const loadData = () => {
-    console.log('DataService debug:');
-    
     const allMaterials = dataService.getMaterials();
     const allStockCounts = dataService.getStockCounts();
     const allSessions = dataService.getStockCountSessions();
     const summaries = dataService.getSessionSummaries();
     
-    // DEBUG
-    console.log('Malzemeler:', allMaterials.length, 'ilk 3:', allMaterials.slice(0, 3));
-    console.log('Sayımlar:', allStockCounts.length);
-    console.log('Oturumlar:', allSessions.length, allSessions);
-    console.log('Özetler:', summaries.length, summaries);
-    
     // Eğer oturum yoksa test oturumu oluştur
     if (allSessions.length === 0) {
-      console.log('Oturum yok, test oturumu oluşturuluyor...');
       const testSession = dataService.saveStockCountSession({
         invoiceNo: 'TEST-001',
         countDate: new Date().toISOString(),
@@ -708,20 +890,17 @@ export default function StockCountManagement() {
         endDate: new Date().toISOString(),
         sessionStatus: 'normal' as MaterialStatus
       });
-      console.log('Test oturumu oluşturuldu:', testSession);
     }
 
     // State'leri güncelle
     setStockCounts(allStockCounts);
-    setSessions(dataService.getStockCountSessions()); // Yeniden al
-    setSessionSummaries(dataService.getSessionSummaries()); // Yeniden al
+    setSessions(dataService.getStockCountSessions());
+    setSessionSummaries(dataService.getSessionSummaries());
     setMaterials(allMaterials);
   };
 
-  // Malzeme listesini yenileme fonksiyonu
   const refreshMaterials = () => {
     const allMaterials = dataService.getMaterials();
-    console.log('Malzemeler yenilendi:', allMaterials.length);
     setMaterials(allMaterials);
     return allMaterials;
   };
@@ -766,7 +945,6 @@ export default function StockCountManagement() {
 
   // Sayım başlatma
   const handleStartCounting = (session: StockCountSession) => {
-    // Malzemeleri yenile
     refreshMaterials();
     setSelectedSession(session);
     setShowCountingInterface(true);
@@ -774,18 +952,15 @@ export default function StockCountManagement() {
 
   // Hızlı sayım başlatma
   const handleQuickCount = (session: StockCountSession) => {
-    // Malzemeleri yenile
     refreshMaterials();
     setSelectedSession(session);
     setShowQuickCountModal(true);
   };
 
-  // Yeni sayım oluşturma - GÜNCELLENDİ: Stok güncelleme eklendi
+  // Yeni sayım oluşturma
   const handleCreateCount = (countData: Omit<StockCount, 'id' | 'createdAt'>) => {
-    // Sayımı kaydet
     dataService.saveStockCount(countData);
     
-    // Malzemenin stoğunu güncelle
     const material = materials.find(m => m.id === countData.materialId);
     if (material) {
       const newStock = material.currentStock + countData.countedQuantity;
@@ -793,12 +968,11 @@ export default function StockCountManagement() {
         currentStock: newStock
       });
       
-      // Loglama
       dataService.logAction({
         action: 'STOK_GÜNCELLENDİ',
         module: 'STOK_TAKİP',
         recordId: material.barcode,
-        details: `${material.name} stoğu ${countData.countedQuantity} adet artırıldı. Yeni stok: ${newStock}`,
+        details: `${material.name} (SN: ${material.sn}) stoğu ${countData.countedQuantity} adet artırıldı. Yeni stok: ${newStock}`,
         performedBy: dataService.getCurrentUser().name,
       });
     }
@@ -806,13 +980,11 @@ export default function StockCountManagement() {
     loadData();
   };
 
-  // Toplu sayım oluşturma (hızlı sayım için) - GÜNCELLENDİ: Stok güncelleme eklendi
+  // Toplu sayım oluşturma
   const handleCreateMultipleCounts = (counts: Omit<StockCount, 'id' | 'createdAt'>[]) => {
-    // Önce tüm sayımları kaydet
     counts.forEach(count => {
       dataService.saveStockCount(count);
       
-      // Her sayım için malzeme stoğunu güncelle
       const material = materials.find(m => m.id === count.materialId);
       if (material) {
         const newStock = material.currentStock + count.countedQuantity;
@@ -822,7 +994,6 @@ export default function StockCountManagement() {
       }
     });
     
-    // Toplu loglama
     dataService.logAction({
       action: 'TOPLU_STOK_GÜNCELLEME',
       module: 'STOK_TAKİP',
@@ -831,7 +1002,7 @@ export default function StockCountManagement() {
       performedBy: dataService.getCurrentUser().name,
     });
     
-    loadData(); // Verileri yenile
+    loadData();
   };
 
   // Oturum silme
@@ -847,6 +1018,31 @@ export default function StockCountManagement() {
   const handleViewSessionDetails = (sessionId: string) => {
     const details = dataService.getStockCountsBySessionDetailed(sessionId);
     setSelectedSessionDetails(details);
+  };
+
+  // Sayım kaydını silme
+  const handleDeleteCount = (countId: string) => {
+    if (confirm('Bu sayım kaydını silmek istediğinizden emin misiniz? Stok düşürülecektir.')) {
+      const count = stockCounts.find(c => c.id === countId);
+      if (count) {
+        const material = materials.find(m => m.id === count.materialId);
+        if (material) {
+          const newStock = Math.max(0, material.currentStock - count.countedQuantity);
+          dataService.updateMaterial(material.id, {
+            currentStock: newStock
+          });
+        }
+        
+        dataService.deleteStockCount(countId);
+        loadData();
+        
+        // Oturum detaylarını yenile
+        if (selectedSessionDetails.length > 0) {
+          const details = dataService.getStockCountsBySessionDetailed(selectedSessionDetails[0]?.sessionId);
+          setSelectedSessionDetails(details);
+        }
+      }
+    }
   };
 
   // PDF görüntüleme
@@ -887,7 +1083,9 @@ export default function StockCountManagement() {
               `GTIN: ${material.gtin || '-'}\n` +
               `SN: ${material.sn || '-'}\n` +
               `UDI: ${material.udiCode || '-'}\n` +
-              `All Barcode: ${material.allBarcode || '-'}`);
+              `All Barcode: ${material.allBarcode || '-'}\n` +
+              `Statü: ${material.status}\n` +
+              `Stok: ${material.currentStock}`);
       } else {
         alert(`"${testCode}" kodu ile eşleşen malzeme bulunamadı.`);
       }
@@ -1177,6 +1375,7 @@ export default function StockCountManagement() {
           session={sessions.find(s => s.id === selectedSessionDetails[0]?.sessionId)}
           onClose={() => setSelectedSessionDetails([])}
           onViewPdf={() => handleViewPdf(selectedSessionDetails[0]?.sessionId)}
+          onDeleteCount={handleDeleteCount}
         />
       )}
     </div>
@@ -1246,7 +1445,6 @@ function SessionModal({ onSave, onClose }: SessionModalProps) {
   };
 
   const handleQuickCount = () => {
-    // Yeni oluşturulan session'ı bul ve hızlı sayım başlat
     const sessions = dataService.getStockCountSessions();
     const newSession = sessions.find(s => 
       s.invoiceNo === formData.invoiceNo && 
@@ -1258,7 +1456,6 @@ function SessionModal({ onSave, onClose }: SessionModalProps) {
       setShowQuickCountOption(false);
       onClose();
       
-      // Kısa bir gecikme ile hızlı sayım modal'ını aç
       setTimeout(() => {
         const event = new CustomEvent('startQuickCount', { detail: newSession });
         window.dispatchEvent(event);
@@ -1472,8 +1669,6 @@ function SessionModal({ onSave, onClose }: SessionModalProps) {
         <QuickCountModal
           session={selectedQuickCountSession}
           onAdd={(counts) => {
-            // Bu fonksiyon ana bileşende handleCreateMultipleCounts'a yönlendirilecek
-            // Ancak şu an için sadece modal'ı kapatıyoruz
             setSelectedQuickCountSession(null);
           }}
           onClose={() => setSelectedQuickCountSession(null)}
@@ -1483,7 +1678,7 @@ function SessionModal({ onSave, onClose }: SessionModalProps) {
   );
 }
 
-// Sayım Arayüzü Modal Component
+// Sayım Arayüzü Modal Component - GÜNCELLENMİŞ
 interface CountingInterfaceModalProps {
   session: StockCountSession;
   materials: Material[];
@@ -1502,65 +1697,84 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
   const [isEditingSN, setIsEditingSN] = useState(false);
   const [editableSN, setEditableSN] = useState('');
   const [allMaterials, setAllMaterials] = useState<Material[]>([]);
+  const [lastProcessedSN, setLastProcessedSN] = useState<string>('');
 
   // Sayım arayüzü açıldığında malzemeleri yükle
   useEffect(() => {
     const loadedMaterials = dataService.getMaterials();
-    console.log('CountingInterfaceModal - Yüklenen malzemeler:', loadedMaterials.length);
     setAllMaterials(loadedMaterials);
   }, []);
 
-  // All Barkod'dan barkod, GTIN ve SN çıkarma fonksiyonu
-  const parseAllBarcode = (allBarcode: string) => {
-    return dataService.parseAllBarcode(allBarcode);
+  // Barkod numarasına göre malzeme bulma (SN hariç)
+  const findMaterialByBarcode = (code: string, materialsToSearch: Material[]) => {
+    return materialsToSearch.find(m => 
+      m.barcode === code ||
+      m.gtin === code ||
+      m.udiCode === code ||
+      m.allBarcode === code ||
+      (m.allBarcode && m.allBarcode.split(',').map(b => b.trim()).includes(code))
+    );
   };
 
-  // Malzeme bulma fonksiyonu - GÜNCELLENDİ: Tüm alanlara bakıyor
-  const findMaterialByCode = (code: string, materialsToSearch: Material[]) => {
-    console.log(`Aranan kod: ${code}, Aranacak malzeme sayısı: ${materialsToSearch.length}`);
-    
-    // Kodun kendisi SN olabilir
-    let material = materialsToSearch.find(m => m.sn === code);
-    
-    // Kod barkod olabilir
-    if (!material) {
-      material = materialsToSearch.find(m => m.barcode === code);
+  // SN numarasına göre malzeme bulma
+  const findMaterialBySN = (sn: string) => {
+    return allMaterials.find(m => m.sn === sn);
+  };
+
+  // Barkod numarasına göre benzer malzeme bulma (temel bilgiler için)
+  const findSimilarMaterialByBarcode = (barcode: string) => {
+    return allMaterials.find(m => 
+      m.barcode === barcode ||
+      m.gtin === barcode
+    );
+  };
+
+  // Konsinye kontrol fonksiyonu - YENİ
+  const checkConsignmentStatus = (material: Material, sessionStatus: MaterialStatus | undefined): boolean => {
+    // Eğer malzeme konsinye ise ve oturum faturalı sayım ise hata ver
+    if (material.status === 'konsinye' && sessionStatus === 'faturalı') {
+      return false;
     }
+    return true;
+  };
+
+  // Yeni malzeme oluşturma fonksiyonu - GÜNCELLENMİŞ
+  const createNewMaterial = (parsedData: { barcode: string, gtin: string, sn: string }, baseMaterial?: Material) => {
+    const baseMaterialData = baseMaterial || {
+      name: `YENİ ÜRÜN - ${parsedData.barcode}`,
+      category: 'Diğer',
+      subCategory: '',
+      unit: 'adet',
+      unitPrice: 0,
+      currentStock: 0,
+      minStock: 0,
+      minStockLevel: 0,
+      supplier: '',
+      isActive: true,
+      status: session.sessionStatus || 'normal' as MaterialStatus,
+      expirationDate: '',
+      serialNoStatus: '',
+      materialDescription: '',
+      intuitiveCode: '',
+      serialNumber: parsedData.sn
+    };
+
+    const newMaterialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'> = {
+      ...baseMaterialData,
+      barcode: parsedData.barcode,
+      gtin: parsedData.gtin || baseMaterialData.gtin || '',
+      sn: parsedData.sn,
+      name: baseMaterial ? `${baseMaterial.name} (SN: ${parsedData.sn})` : `YENİ ÜRÜN - ${parsedData.barcode}`,
+      allBarcode: parsedData.barcode ? `01${parsedData.gtin || parsedData.barcode}17${new Date().toISOString().slice(2,10)}21${parsedData.sn}30${parsedData.sn.length}` : ''
+    };
+
+    const newMaterial = dataService.saveMaterial(newMaterialData);
     
-    // Kod GTIN olabilir
-    if (!material) {
-      material = materialsToSearch.find(m => m.gtin === code);
-    }
+    // Malzemeleri yenile
+    const updatedMaterials = dataService.getMaterials();
+    setAllMaterials(updatedMaterials);
     
-    // Kod UDI Code olabilir
-    if (!material) {
-      material = materialsToSearch.find(m => m.udiCode === code);
-    }
-    
-    // Kod All Barcode olabilir
-    if (!material) {
-      material = materialsToSearch.find(m => m.allBarcode === code);
-    }
-    
-    // All Barcode virgülle ayrılmış liste olabilir
-    if (!material) {
-      material = materialsToSearch.find(m => 
-        m.allBarcode && m.allBarcode.split(',').map(b => b.trim()).includes(code)
-      );
-    }
-    
-    // Sezgisel kod olabilir
-    if (!material) {
-      material = materialsToSearch.find(m => m.intuitiveCode === code);
-    }
-    
-    if (material) {
-      console.log('Malzeme bulundu:', material.name, 'Barkod:', material.barcode, 'SN:', material.sn);
-    } else {
-      console.log('Malzeme bulunamadı');
-    }
-    
-    return material;
+    return newMaterial;
   };
 
   const handleBarcodeScan = (scannedBarcode: string) => {
@@ -1569,7 +1783,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     setShowBarcodeScanner(false);
   };
 
-  const handleBarcodeChange = (value: string) => {
+  const handleBarcodeChange = async (value: string) => {
     setBarcode(value);
     
     if (value) {
@@ -1581,21 +1795,8 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
       
       // All Barkod formatı mı kontrol et
       if (value.startsWith('01') && value.length >= 30) {
-        parsed = parseAllBarcode(value);
+        parsed = parseAllBarcodeEnhanced(value);
         setParsedData(parsed);
-        console.log('All Barkod çözümlendi:', parsed);
-        
-        // SN kontrolü: Eğer SN mevcutsa ve sistemde varsa uyarı göster
-        if (parsed.sn) {
-          const existingMaterialWithSN = allMaterials.find(m => m.sn === parsed.sn);
-          if (existingMaterialWithSN) {
-            alert(`SN ${parsed.sn} zaten sistemde kayıtlı! Malzeme: ${existingMaterialWithSN.name}`);
-            setBarcode('');
-            setParsedData({ barcode: '', gtin: '', sn: '' });
-            setCurrentMaterial(null);
-            return;
-          }
-        }
       }
       
       // Session'a göre filtrele
@@ -1603,43 +1804,150 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
         !session.sessionStatus || m.status === session.sessionStatus
       );
       
-      console.log('Filtrelenmiş malzemeler:', filteredMaterials.length);
-      
-      // Malzemeyi bul - GÜNCELLENDİ: Tüm alanlara bak
-      let material = findMaterialByCode(value, filteredMaterials);
-      
-      // Eğer All Barkod parse edildiyse ve malzeme bulunamadıysa, parse edilmiş barkod ile de ara
-      if (!material && parsed.barcode && parsed.barcode !== value) {
-        console.log('Parsed barkod ile ara:', parsed.barcode);
-        material = findMaterialByCode(parsed.barcode, filteredMaterials);
+      // 1. ÖNCE SN İLE ARA - GÜNCELLENDİ
+      if (parsed.sn && parsed.sn.trim() !== '') {
+        const existingMaterialWithSN = findMaterialBySN(parsed.sn);
+        if (existingMaterialWithSN) {
+          // Konsinye kontrolü
+          if (!checkConsignmentStatus(existingMaterialWithSN, session.sessionStatus)) {
+            alert(`SN ${parsed.sn} numaralı ürün Konsinye'dir. Faturalı Sayıma eklenemez!\nLütfen Malzeme Yönetimine girip SN kodlu ürünün statüsünü Faturalı yapın.`);
+            setBarcode('');
+            setParsedData({ barcode: '', gtin: '', sn: '' });
+            setCurrentMaterial(null);
+            return;
+          }
+          
+          if (session.sessionStatus && existingMaterialWithSN.status !== session.sessionStatus) {
+            alert(`SN ${parsed.sn} zaten sistemde kayıtlı ancak bu oturum statüsüne uygun değil!\nMalzeme statüsü: ${existingMaterialWithSN.status}`);
+            setBarcode('');
+            setParsedData({ barcode: '', gtin: '', sn: '' });
+            setCurrentMaterial(null);
+            return;
+          }
+          
+          setCurrentMaterial(existingMaterialWithSN);
+          setEditableSN(existingMaterialWithSN.sn || parsed.sn);
+          setShowManualEntry(false);
+          setLastProcessedSN(parsed.sn);
+          
+          // Otomatik bilgi getir
+          alert(`SN ${parsed.sn} bulundu:\nMalzeme: ${existingMaterialWithSN.name}\nStok: ${existingMaterialWithSN.currentStock}`);
+          return;
+        }
       }
       
-      // Parse edilmiş GTIN ile ara
-      if (!material && parsed.gtin) {
-        console.log('Parsed GTIN ile ara:', parsed.gtin);
-        material = findMaterialByCode(parsed.gtin, filteredMaterials);
+      // 2. BARKOD/GTIN İLE ARA
+      let material: Material | undefined;
+      
+      if (parsed.barcode && parsed.barcode.trim() !== '') {
+        material = findMaterialByBarcode(parsed.barcode, filteredMaterials);
       }
       
-      // Parse edilmiş SN ile ara
-      if (!material && parsed.sn) {
-        console.log('Parsed SN ile ara:', parsed.sn);
-        material = findMaterialByCode(parsed.sn, filteredMaterials);
+      if (!material && parsed.gtin && parsed.gtin.trim() !== '') {
+        material = findMaterialByBarcode(parsed.gtin, filteredMaterials);
       }
       
+      // 3. BARKOD VAR AMA SN YOKSA KONTROL ET
       if (material) {
+        // Konsinye kontrolü
+        if (!checkConsignmentStatus(material, session.sessionStatus)) {
+          alert(`Barkod ${parsed.barcode} Konsinye üründür. Bu Sayıma eklenemez!`);
+          setBarcode('');
+          setParsedData({ barcode: '', gtin: '', sn: '' });
+          setCurrentMaterial(null);
+          return;
+        }
+        
+        // Barkod bulundu, ancak SN farklı ise YENİ malzeme oluştur
+        if (parsed.sn && parsed.sn.trim() !== '' && parsed.sn !== material.sn) {
+          // Bu barkod için benzer malzeme ara (temel bilgiler için)
+          const similarMaterial = findSimilarMaterialByBarcode(parsed.barcode || parsed.gtin);
+          
+          // SN ile malzeme var mı kontrol et
+          const existingMaterialWithSN = findMaterialBySN(parsed.sn);
+          if (existingMaterialWithSN) {
+            // Aynı SN var, onu kullan
+            if (!checkConsignmentStatus(existingMaterialWithSN, session.sessionStatus)) {
+              alert(`SN ${parsed.sn} numaralı ürün Konsinye'dir. Faturalı Sayıma eklenemez!`);
+              setBarcode('');
+              setParsedData({ barcode: '', gtin: '', sn: '' });
+              setCurrentMaterial(null);
+              return;
+            }
+            
+            setCurrentMaterial(existingMaterialWithSN);
+            setEditableSN(existingMaterialWithSN.sn || '');
+            setShowManualEntry(false);
+            setLastProcessedSN(existingMaterialWithSN.sn);
+            alert(`SN ${parsed.sn} başka bir malzemede kayıtlı. O malzeme kullanılıyor: ${existingMaterialWithSN.name}`);
+            return;
+          }
+          
+          const newMaterial = createNewMaterial(parsed, similarMaterial || material);
+          material = newMaterial;
+        }
+        
+        if (session.sessionStatus && material.status !== session.sessionStatus) {
+          alert(`"${material.name}" malzemesi bu oturum statüsüne uygun değil! Malzeme statüsü: ${material.status}`);
+          setBarcode('');
+          setParsedData({ barcode: '', gtin: '', sn: '' });
+          setCurrentMaterial(null);
+          return;
+        }
+        
         setCurrentMaterial(material);
         setEditableSN(material.sn || parsed.sn);
         setShowManualEntry(false);
+        setLastProcessedSN(material.sn || parsed.sn);
+        
+        // Otomatik bilgi getir
+        alert(`Barkod ${parsed.barcode} bulundu:\nMalzeme: ${material.name}\nStok: ${material.currentStock}`);
       } else {
-        setCurrentMaterial(null);
-        setEditableSN(parsed.sn);
-        setShowManualEntry(true);
+        // 4. MALZEME BULUNAMADI, YENİ MALZEME OLUŞTUR
+        if (parsed.barcode || parsed.gtin || parsed.sn) {
+          // Benzer barkodlu malzeme ara (temel bilgiler için)
+          const similarMaterial = findSimilarMaterialByBarcode(parsed.barcode || parsed.gtin || '');
+          
+          // SN kontrolü - eğer SN varsa ve sistemde yoksa
+          if (parsed.sn && parsed.sn.trim() !== '') {
+            const existingMaterialWithSN = findMaterialBySN(parsed.sn);
+            if (existingMaterialWithSN) {
+              // SN zaten varsa, onu kullan
+              if (!checkConsignmentStatus(existingMaterialWithSN, session.sessionStatus)) {
+                alert(`SN ${parsed.sn} numaralı ürün Konsinye'dir. Faturalı Sayıma eklenemez!`);
+                setBarcode('');
+                setParsedData({ barcode: '', gtin: '', sn: '' });
+                setCurrentMaterial(null);
+                return;
+              }
+              
+              setCurrentMaterial(existingMaterialWithSN);
+              setEditableSN(existingMaterialWithSN.sn || '');
+              setShowManualEntry(false);
+              setLastProcessedSN(existingMaterialWithSN.sn);
+              alert(`SN ${parsed.sn} zaten sistemde kayıtlı. Mevcut malzeme kullanılıyor: ${existingMaterialWithSN.name}`);
+              return;
+            }
+          }
+          
+          setCurrentMaterial(null);
+          setEditableSN(parsed.sn);
+          setShowManualEntry(true);
+          setLastProcessedSN(parsed.sn);
+        } else {
+          setCurrentMaterial(null);
+          setShowManualEntry(false);
+          setParsedData({ barcode: '', gtin: '', sn: '' });
+          setEditableSN('');
+          setLastProcessedSN('');
+        }
       }
     } else {
       setCurrentMaterial(null);
       setShowManualEntry(false);
       setParsedData({ barcode: '', gtin: '', sn: '' });
       setEditableSN('');
+      setLastProcessedSN('');
     }
   };
 
@@ -1649,18 +1957,20 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
       return;
     }
 
-    // SN kontrolü: Eğer SN değiştirildiyse ve sistemde varsa kontrol et
+    // SN kontrolü
     if (editableSN && editableSN !== currentMaterial.sn) {
       const existingMaterialWithSN = allMaterials.find(m => m.sn === editableSN);
       if (existingMaterialWithSN && existingMaterialWithSN.id !== currentMaterial.id) {
-        alert(`SN ${editableSN} zaten sistemde başka bir malzemeye kayıtlı! Malzeme: ${existingMaterialWithSN.name}`);
-        return;
+        // Aynı SN başka malzemede varsa, o malzemenin stoğunu güncelle
+        const updatedMaterial = { ...existingMaterialWithSN };
+        dataService.updateMaterial(updatedMaterial.id, updatedMaterial);
+        setCurrentMaterial(updatedMaterial);
+      } else {
+        // SN'yi güncelle
+        const updatedMaterial = { ...currentMaterial, sn: editableSN };
+        dataService.updateMaterial(updatedMaterial.id, updatedMaterial);
+        setCurrentMaterial(updatedMaterial);
       }
-      
-      // SN'yi güncelle
-      const updatedMaterial = { ...currentMaterial, sn: editableSN };
-      dataService.updateMaterial(updatedMaterial.id, updatedMaterial);
-      setCurrentMaterial(updatedMaterial);
     }
 
     const countData: Omit<StockCount, 'id' | 'createdAt'> = {
@@ -1695,6 +2005,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     setParsedData({ barcode: '', gtin: '', sn: '' });
     setEditableSN('');
     setIsEditingSN(false);
+    setLastProcessedSN('');
   };
 
   const handleManualMaterialSave = (materialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -1702,11 +2013,16 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     const refreshedMaterials = dataService.getMaterials();
     setAllMaterials(refreshedMaterials);
     
-    // SN kontrolü: Eğer SN mevcutsa ve sistemde varsa uyarı göster
+    // SN kontrolü
     if (materialData.sn) {
       const existingMaterialWithSN = refreshedMaterials.find(m => m.sn === materialData.sn);
       if (existingMaterialWithSN) {
-        alert(`SN ${materialData.sn} zaten sistemde kayıtlı! Malzeme: ${existingMaterialWithSN.name}`);
+        // Aynı SN varsa, mevcut malzemeyi kullan
+        setCurrentMaterial(existingMaterialWithSN);
+        setEditableSN(existingMaterialWithSN.sn || '');
+        setShowManualEntry(false);
+        setLastProcessedSN(existingMaterialWithSN.sn);
+        alert(`SN ${materialData.sn} zaten sistemde kayıtlı. Mevcut malzeme kullanılıyor: ${existingMaterialWithSN.name}`);
         return;
       }
     }
@@ -1720,6 +2036,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     setCurrentMaterial(newMaterial);
     setEditableSN(newMaterial.sn || '');
     setShowManualEntry(false);
+    setLastProcessedSN(newMaterial.sn);
   };
 
   const handleUpdateSN = () => {
@@ -1732,12 +2049,15 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     const refreshedMaterials = dataService.getMaterials();
     setAllMaterials(refreshedMaterials);
     
-    // SN kontrolü: Eğer SN değiştirildiyse ve sistemde varsa kontrol et
+    // SN kontrolü
     if (editableSN !== currentMaterial?.sn) {
       const existingMaterialWithSN = refreshedMaterials.find(m => m.sn === editableSN);
       if (existingMaterialWithSN && existingMaterialWithSN.id !== currentMaterial?.id) {
-        alert(`SN ${editableSN} zaten sistemde başka bir malzemeye kayıtlı! Malzeme: ${existingMaterialWithSN.name}`);
-        setEditableSN(currentMaterial?.sn || '');
+        // Aynı SN başka malzemede varsa, o malzemeyi kullan
+        setCurrentMaterial(existingMaterialWithSN);
+        setEditableSN(existingMaterialWithSN.sn || '');
+        setIsEditingSN(false);
+        alert(`SN ${editableSN} başka bir malzemede kayıtlı. O malzeme kullanılıyor: ${existingMaterialWithSN.name}`);
         return;
       }
       
@@ -1833,6 +2153,12 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
               <p className="text-xs text-gray-500 mt-1">
                 Barkod, GTIN, Seri Numarası, UDI Code veya All Barcode girebilirsiniz
               </p>
+              
+              {lastProcessedSN && (
+                <p className="text-xs text-green-600 mt-1">
+                  Son işlenen SN: {lastProcessedSN}
+                </p>
+              )}
               
               {/* All Barkod parse edilmişse bilgileri göster */}
               {parsedData.barcode && (
@@ -1976,7 +2302,9 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                     setBarcode('');
                     setParsedData({ barcode: '', gtin: '', sn: '' });
                     setEditableSN('');
+                    setLastProcessedSN('');
                   }}
+                  sessionStatus={session.sessionStatus}
                 />
               </div>
             )}
@@ -2115,21 +2443,22 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
   );
 }
 
-// Manuel Malzeme Giriş Component
+// Manuel Malzeme Giriş Component - GÜNCELLENMİŞ
 interface ManualMaterialEntryProps {
   barcode: string;
   parsedData: { barcode: string; gtin: string; sn: string };
   categories: string[];
   onSave: (material: Omit<Material, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
+  sessionStatus?: MaterialStatus;
 }
 
-function ManualMaterialEntry({ barcode, parsedData, categories, onSave, onCancel }: ManualMaterialEntryProps) {
+function ManualMaterialEntry({ barcode, parsedData, categories, onSave, onCancel, sessionStatus }: ManualMaterialEntryProps) {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
     subCategory: '',
-    currentStock: 1, // Otomatik olarak 1 adet
+    currentStock: 1,
     unitPrice: 0,
     supplier: '',
     unit: 'adet',
@@ -2138,13 +2467,12 @@ function ManualMaterialEntry({ barcode, parsedData, categories, onSave, onCancel
     sn: parsedData.sn || barcode,
     udiCode: '',
     allBarcode: barcode,
-    status: 'normal' as MaterialStatus
+    status: (sessionStatus || 'normal') as MaterialStatus
   });
 
   const units = ['adet', 'kutu', 'şişe', 'tüp', 'paket', 'ampul', 'kg', 'lt', 'metre'];
   const statusOptions: MaterialStatus[] = ['normal', 'konsinye', 'iade', 'faturalı'];
 
-  // All Barkod varsa otomatik doldur
   useEffect(() => {
     if (parsedData.barcode && !formData.gtin) {
       setFormData(prev => ({
@@ -2160,11 +2488,6 @@ function ManualMaterialEntry({ barcode, parsedData, categories, onSave, onCancel
 
     if (!formData.name.trim()) {
       alert('Lütfen malzeme adı giriniz!');
-      return;
-    }
-
-    if (!formData.sn.trim()) {
-      alert('Lütfen SN numarası giriniz!');
       return;
     }
 
@@ -2431,9 +2754,12 @@ interface SessionDetailsModalProps {
   session: StockCountSession | undefined;
   onClose: () => void;
   onViewPdf: () => void;
+  onDeleteCount: (countId: string) => void;
 }
 
-function SessionDetailsModal({ sessionDetails, session, onClose, onViewPdf }: SessionDetailsModalProps) {
+function SessionDetailsModal({ sessionDetails, session, onClose, onViewPdf, onDeleteCount }: SessionDetailsModalProps) {
+  const currentUser = dataService.getCurrentUser();
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
@@ -2471,6 +2797,9 @@ function SessionDetailsModal({ sessionDetails, session, onClose, onViewPdf }: Se
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Birim Fiyatı</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Toplam Değer</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Sayım Tarihi</th>
+                {currentUser.permissions.manageMaterials && (
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">İşlem</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -2521,19 +2850,35 @@ function SessionDetailsModal({ sessionDetails, session, onClose, onViewPdf }: Se
                   <td className="py-3 px-4 text-sm text-gray-600">
                     {new Date(detail.countDate).toLocaleDateString('tr-TR')}
                   </td>
+                  {currentUser.permissions.manageMaterials && (
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => onDeleteCount(detail.id)}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Sil"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={onClose}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-6 rounded-lg font-medium transition-colors"
-          >
-            Kapat
-          </button>
+        <div className="flex justify-between items-center mt-6">
+          <div className="text-sm text-gray-600">
+            Toplam {sessionDetails.length} kayıt
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={onClose}
+              className="bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-6 rounded-lg font-medium transition-colors"
+            >
+              Kapat
+            </button>
+          </div>
         </div>
       </div>
     </div>
