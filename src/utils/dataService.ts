@@ -3017,16 +3017,19 @@ class DataService {
     };
 
     try {
+      console.log('Parsing All Barcode:', allBarcode);
+      
+      // GS1-128 formatında All Barcode kontrolü
       if (allBarcode.startsWith('01') && allBarcode.length >= 30) {
-        // 1. GTIN'i al (01'den sonraki 14 karakter)
+        // GTIN'i al (01'den sonraki 14 karakter)
         if (allBarcode.length >= 16) {
-          parsed.gtin = allBarcode.substring(2, 16); // Pozisyon 2-15 (14 karakter)
+          parsed.gtin = allBarcode.substring(2, 16); // 01'den sonraki 14 karakter
           
-          // Barkod kısmı - GTIN'in ilk 2 sıfırını çıkar
-          parsed.barcode = parsed.gtin.startsWith('0') ? parsed.gtin.substring(1) : parsed.gtin;
+          // Barkod kısmı - GTIN'in ilk karakterini atla (GS1 prefix)
+          parsed.barcode = parsed.gtin.substring(1); // İlk karakteri atla, geri kalanı barkod olarak kullan
         }
         
-        // 2. SN'yi bul (21'den sonra)
+        // SN'yi bul (21'den sonraki kısım)
         const snIndex = allBarcode.indexOf('21');
         if (snIndex !== -1 && snIndex + 2 < allBarcode.length) {
           const afterSN = allBarcode.substring(snIndex + 2);
@@ -3051,9 +3054,107 @@ class DataService {
         parsed.barcode = allBarcode;
       }
       
-      console.log('DataService Parse:', { allBarcode, parsed });
+      console.log('DataService Parse Result:', { allBarcode, parsed });
     } catch (error) {
       console.error('All Barkod parse error:', error);
+      parsed.barcode = allBarcode;
+    }
+
+    return parsed;
+  }
+
+  // Örnek All Barcode: 0100380650049032172702082125352774043301
+  // 01 - GTIN için AI
+  // 00380650049032 - GTIN (14 karakter)
+  // 17 - Son kullanma tarihi için AI
+  // 270208 - Tarih (YYMMDD)
+  // 21 - SN için AI
+  // 25352774043301 - SN
+  // İstediğiniz çıktı:
+  // GTIN = 00380650049032
+  // Barkod = 380650049032 (GTIN'in ilk sıfırını atla)
+  // SN = 253527740433
+
+  parseAllBarcodeAdvanced(allBarcode: string): { barcode: string; gtin: string; sn: string } {
+    const parsed = {
+      barcode: '',
+      gtin: '',
+      sn: ''
+    };
+
+    try {
+      console.log('Advanced Parsing All Barcode:', allBarcode);
+      
+      if (allBarcode.startsWith('01')) {
+        let index = 2; // 01'den sonra başla
+        
+        // GTIN'i al (14 karakter)
+        if (index + 14 <= allBarcode.length) {
+          parsed.gtin = allBarcode.substring(index, index + 14);
+          index += 14;
+          
+          // Barkod kısmı - GTIN'in ilk sıfırını atla
+          parsed.barcode = parsed.gtin.replace(/^0+/, ''); // Başındaki tüm sıfırları temizle
+        }
+        
+        // Diğer AI'ları ara
+        while (index < allBarcode.length) {
+          // AI'ları kontrol et
+          if (index + 2 <= allBarcode.length) {
+            const ai = allBarcode.substring(index, index + 2);
+            
+            if (ai === '17') {
+              // Son kullanma tarihi - atla
+              index += 2 + 6; // AI + 6 karakter tarih
+            } else if (ai === '10') {
+              // Batch/lot number - atla, sonraki AI'ya kadar
+              index += 2;
+              while (index < allBarcode.length && 
+                     !['01', '10', '11', '17', '21', '30', '91'].includes(allBarcode.substring(index, index + 2))) {
+                index++;
+              }
+            } else if (ai === '21') {
+              // SN'yi al
+              index += 2; // AI'yı atla
+              let snValue = '';
+              while (index < allBarcode.length) {
+                if (index + 2 <= allBarcode.length) {
+                  const nextAI = allBarcode.substring(index, index + 2);
+                  if (['01', '10', '11', '17', '30', '91'].includes(nextAI)) {
+                    break;
+                  }
+                }
+                snValue += allBarcode[index];
+                index++;
+              }
+              parsed.sn = snValue.replace(/[^a-zA-Z0-9]/g, '');
+            } else if (ai === '30') {
+              // Miktar - atla
+              index += 2;
+              while (index < allBarcode.length && 
+                     !['01', '10', '11', '17', '21', '30', '91'].includes(allBarcode.substring(index, index + 2))) {
+                index++;
+              }
+            } else {
+              // Diğer AI'lar için genel yaklaşım
+              index += 2;
+              while (index < allBarcode.length && 
+                     !['01', '10', '11', '17', '21', '30', '91'].includes(allBarcode.substring(index, index + 2))) {
+                index++;
+              }
+            }
+          } else {
+            break;
+          }
+        }
+      } else {
+        // Standart barkod
+        parsed.barcode = allBarcode;
+      }
+      
+      console.log('Advanced Parse Result:', { allBarcode, parsed });
+    } catch (error) {
+      console.error('Advanced All Barkod parse error:', error);
       parsed.barcode = allBarcode;
     }
 
