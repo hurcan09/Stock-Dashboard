@@ -1795,6 +1795,311 @@ function StatusChangeModal({
   );
 }
 
+// Kategori Güncelleme Modal Component
+function CategoryUpdateModal({ 
+  selectedMaterials, 
+  onSave, 
+  onClose 
+}: { 
+  selectedMaterials: Material[];
+  onSave: (materialIds: string[], category: string) => void;
+  onClose: () => void;
+}) {
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategory, setNewCategory] = useState('');
+
+  useEffect(() => {
+    const loadedCategories = dataService.getCategories();
+    setCategories(loadedCategories);
+  }, []);
+
+  const handleAddCategory = () => {
+    if (newCategory.trim()) {
+      const newCat: Omit<Category, 'id'> = {
+        name: newCategory.trim(),
+        description: '',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      dataService.saveCategory(newCat);
+      setCategories(dataService.getCategories());
+      setSelectedCategory(newCategory.trim());
+      setNewCategory('');
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCategory.trim()) {
+      alert('Lütfen kategori seçiniz!');
+      return;
+    }
+
+    onSave(selectedMaterials.map(m => m.id), selectedCategory);
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-md mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Kategori Güncelle</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-2">
+                {selectedMaterials.length} malzemenin kategorisini değiştireceksiniz.
+              </p>
+              <div className="max-h-40 overflow-y-auto mb-4">
+                {selectedMaterials.slice(0, 10).map((material, index) => (
+                  <div key={material.id} className="flex items-center justify-between py-1 border-b border-gray-100">
+                    <span className="text-sm truncate">{material.name}</span>
+                    <span className="text-xs text-gray-500">{material.category}</span>
+                  </div>
+                ))}
+                {selectedMaterials.length > 10 && (
+                  <div className="text-center text-sm text-gray-500 py-2">
+                    ...ve {selectedMaterials.length - 10} malzeme daha
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Yeni Kategori *
+              </label>
+              <div className="space-y-2">
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  <option value="">Kategori seçin *</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.name}>{category.name}</option>
+                  ))}
+                </select>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="Yeni kategori adı"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all"
+                  >
+                    Ekle
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+              >
+                Kategoriyi Güncelle
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Birim Güncelleme Modal Component
+function UnitUpdateModal({ 
+  selectedMaterials, 
+  onSave, 
+  onClose 
+}: { 
+  selectedMaterials: Material[];
+  onSave: (materialIds: string[], unit: string) => void;
+  onClose: () => void;
+}) {
+  const [selectedUnit, setSelectedUnit] = useState('');
+  const units = ['adet', 'kutu', 'şişe', 'tüp', 'paket', 'ampul', 'kg', 'lt', 'metre'];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUnit.trim()) {
+      alert('Lütfen birim seçiniz!');
+      return;
+    }
+
+    onSave(selectedMaterials.map(m => m.id), selectedUnit);
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-md mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Birim Güncelle</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-2">
+                {selectedMaterials.length} malzemenin birimini değiştireceksiniz.
+              </p>
+              <div className="max-h-40 overflow-y-auto mb-4">
+                {selectedMaterials.slice(0, 10).map((material, index) => (
+                  <div key={material.id} className="flex items-center justify-between py-1 border-b border-gray-100">
+                    <span className="text-sm truncate">{material.name}</span>
+                    <span className="text-xs text-gray-500">{material.unit}</span>
+                  </div>
+                ))}
+                {selectedMaterials.length > 10 && (
+                  <div className="text-center text-sm text-gray-500 py-2">
+                    ...ve {selectedMaterials.length - 10} malzeme daha
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Yeni Birim *
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={selectedUnit}
+                onChange={(e) => setSelectedUnit(e.target.value)}
+              >
+                <option value="">Birim seçin *</option>
+                {units.map(unit => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+              >
+                Birimi Güncelle
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Seçilileri Sil Onay Modalı
+function DeleteConfirmModal({ 
+  selectedMaterials, 
+  onDelete, 
+  onClose 
+}: { 
+  selectedMaterials: Material[];
+  onDelete: (materialIds: string[]) => void;
+  onClose: () => void;
+}) {
+  const handleDelete = () => {
+    onDelete(selectedMaterials.map(m => m.id));
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container w-full max-w-md mx-4">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-red-600">Malzemeleri Sil</h3>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-red-800 mb-1">Dikkat!</h4>
+                  <p className="text-sm text-red-700">
+                    {selectedMaterials.length} malzemeyi silmek üzeresiniz. Bu işlem geri alınamaz.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-600 mb-2">
+                Silinecek malzemeler:
+              </p>
+              <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                {selectedMaterials.map((material, index) => (
+                  <div key={material.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                    <div>
+                      <div className="font-medium text-sm">{material.name}</div>
+                      <div className="text-xs text-gray-500">{material.barcode} | {material.category}</div>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Stok: {material.currentStock}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <button
+                onClick={handleDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl"
+              >
+                Sil
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-all"
+              >
+                İptal
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Yeni Malzeme Ekleme Modalı - Güncellenmiş (Kaydırma Çubuğu Sağda)
 function NewMaterialModal({ onSave, onClose }: { onSave: (material: any) => void; onClose: () => void }) {
   const [formData, setFormData] = useState({
@@ -2672,6 +2977,9 @@ export default function MaterialManagement() {
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [showCategoryUpdateModal, setShowCategoryUpdateModal] = useState(false);
+  const [showUnitUpdateModal, setShowUnitUpdateModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showSelectAll, setShowSelectAll] = useState(false);
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -2856,6 +3164,63 @@ export default function MaterialManagement() {
     setSelectedMaterials([]);
     setShowSelectAll(false);
     alert(`${materialIds.length} malzeme başarıyla güncellendi.`);
+  };
+
+  const handleBulkCategoryUpdate = (materialIds: string[], category: string) => {
+    materialIds.forEach(materialId => {
+      dataService.updateMaterial(materialId, { category });
+    });
+    
+    dataService.logAction({
+      action: 'TOPLU_KATEGORİ_GÜNCELLEME',
+      module: 'MALZEME_YÖNETİMİ',
+      recordId: 'TOPLU_KATEGORİ',
+      details: `${materialIds.length} malzemenin kategorisi ${category} olarak güncellendi`,
+      performedBy: dataService.getCurrentUser().name,
+    });
+    
+    loadData();
+    setSelectedMaterials([]);
+    setShowSelectAll(false);
+    alert(`${materialIds.length} malzemenin kategorisi ${category} olarak güncellendi.`);
+  };
+
+  const handleBulkUnitUpdate = (materialIds: string[], unit: string) => {
+    materialIds.forEach(materialId => {
+      dataService.updateMaterial(materialId, { unit });
+    });
+    
+    dataService.logAction({
+      action: 'TOPLU_BİRİM_GÜNCELLEME',
+      module: 'MALZEME_YÖNETİMİ',
+      recordId: 'TOPLU_BİRİM',
+      details: `${materialIds.length} malzemenin birimi ${unit} olarak güncellendi`,
+      performedBy: dataService.getCurrentUser().name,
+    });
+    
+    loadData();
+    setSelectedMaterials([]);
+    setShowSelectAll(false);
+    alert(`${materialIds.length} malzemenin birimi ${unit} olarak güncellendi.`);
+  };
+
+  const handleBulkDelete = (materialIds: string[]) => {
+    materialIds.forEach(materialId => {
+      dataService.deleteMaterial(materialId);
+    });
+    
+    dataService.logAction({
+      action: 'TOPLU_MALZEME_SİLME',
+      module: 'MALZEME_YÖNETİMİ',
+      recordId: 'TOPLU_SİLME',
+      details: `${materialIds.length} malzeme toplu silindi`,
+      performedBy: dataService.getCurrentUser().name,
+    });
+    
+    loadData();
+    setSelectedMaterials([]);
+    setShowSelectAll(false);
+    alert(`${materialIds.length} malzeme başarıyla silindi.`);
   };
 
   const handleDeleteMaterial = (id: string) => {
@@ -3269,6 +3634,30 @@ export default function MaterialManagement() {
                 >
                   <Edit2 className="h-4 w-4" />
                   <span>Statü Değiştir</span>
+                </button>
+                
+                <button
+                  onClick={() => setShowCategoryUpdateModal(true)}
+                  className="btn-modern text-sm"
+                >
+                  <Tag className="h-4 w-4" />
+                  <span>Kategori Güncelle</span>
+                </button>
+                
+                <button
+                  onClick={() => setShowUnitUpdateModal(true)}
+                  className="btn-modern text-sm"
+                >
+                  <Package className="h-4 w-4" />
+                  <span>Birim Güncelle</span>
+                </button>
+                
+                <button
+                  onClick={() => setShowDeleteConfirmModal(true)}
+                  className="btn-modern text-sm bg-red-600 hover:bg-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Seçilileri Sil</span>
                 </button>
                 
                 <button
@@ -3969,6 +4358,30 @@ export default function MaterialManagement() {
           selectedMaterials={materials.filter(m => selectedMaterials.includes(m.id))}
           onSave={handleBulkUpdate}
           onClose={() => setShowBulkEditModal(false)}
+        />
+      )}
+
+      {showCategoryUpdateModal && (
+        <CategoryUpdateModal
+          selectedMaterials={materials.filter(m => selectedMaterials.includes(m.id))}
+          onSave={handleBulkCategoryUpdate}
+          onClose={() => setShowCategoryUpdateModal(false)}
+        />
+      )}
+
+      {showUnitUpdateModal && (
+        <UnitUpdateModal
+          selectedMaterials={materials.filter(m => selectedMaterials.includes(m.id))}
+          onSave={handleBulkUnitUpdate}
+          onClose={() => setShowUnitUpdateModal(false)}
+        />
+      )}
+
+      {showDeleteConfirmModal && (
+        <DeleteConfirmModal
+          selectedMaterials={materials.filter(m => selectedMaterials.includes(m.id))}
+          onDelete={handleBulkDelete}
+          onClose={() => setShowDeleteConfirmModal(false)}
         />
       )}
     </div>
