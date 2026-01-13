@@ -29,7 +29,7 @@ function QuickCountModal({
     setMaterials(allMaterials);
   };
 
-  // All Barkod parse fonksiyonu (SN ÇIKARILDI - sadece barkod ve GTIN)
+  // All Barkod parse fonksiyonu - Sadece Barkod ve GTIN çözümle
   const parseAllBarcode = (allBarcode: string) => {
     let barcode = '';
     let gtin = '';
@@ -37,14 +37,14 @@ function QuickCountModal({
     try {
       // All Barcode formatı: 01...17...21...30...
       if (allBarcode.startsWith('01') && allBarcode.length >= 30) {
-        // 01 (GTIN) kısmını bul
+        // 01 (GTIN) kısmını bul - 14 haneli
         const gtinMatch = allBarcode.match(/01(\d{14})/);
         if (gtinMatch && gtinMatch[1]) {
           gtin = gtinMatch[1];
           barcode = gtinMatch[1].replace(/^0+/, ''); // Baştaki sıfırları kaldır
         }
         
-        // 21 (SN) kısmını BULMADAN ATLA - sadece debug için göster
+        // 21 (SN) kısmını BUL ama kullanma - sadece debug için
         const snMatch = allBarcode.match(/21(\d+)/);
         if (snMatch) {
           console.log('DEBUG: All Barcode içinde SN bulundu:', snMatch[1], 'ama kullanılmıyor');
@@ -60,11 +60,11 @@ function QuickCountModal({
     return {
       barcode: barcode,
       gtin: gtin,
-      sn: '' // SN BURADA BOŞ - kullanıcı girecek
+      sn: '' // SN BOŞ BIRAK - kullanıcı girecek
     };
   };
 
-  // Barkod numarasına göre malzeme bulma (SN hariç)
+  // Barkod numarasına göre malzeme bulma
   const findMaterialByBarcode = (barcode: string) => {
     return materials.find(m => 
       m.barcode === barcode ||
@@ -75,20 +75,12 @@ function QuickCountModal({
     );
   };
 
-  // SN numarasına göre malzeme bulma (sadece kontrol için)
+  // SN numarasına göre malzeme bulma
   const findMaterialBySN = (sn: string) => {
     return materials.find(m => m.sn === sn);
   };
 
-  // Barkod numarasına göre benzer malzeme bulma (temel bilgiler için)
-  const findSimilarMaterialByBarcode = (barcode: string) => {
-    return materials.find(m => 
-      m.barcode === barcode ||
-      m.gtin === barcode
-    );
-  };
-
-  // Yeni malzeme oluşturma fonksiyonu (SN kullanıcı tarafından girilecek)
+  // Yeni malzeme oluşturma fonksiyonu
   const createNewMaterial = (parsedData: { barcode: string, gtin: string, sn: string }, baseMaterial?: Material) => {
     const baseMaterialData = baseMaterial || {
       name: `YENİ ÜRÜN - ${parsedData.barcode}`,
@@ -106,7 +98,7 @@ function QuickCountModal({
       serialNoStatus: '',
       materialDescription: '',
       intuitiveCode: '',
-      serialNumber: '' // SN BOŞ - kullanıcı girecek
+      serialNumber: ''
     };
 
     const newMaterialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -115,19 +107,25 @@ function QuickCountModal({
       gtin: parsedData.gtin || baseMaterialData.gtin || '',
       sn: '', // SN BOŞ BIRAKILDI - kullanıcı girecek
       name: baseMaterial ? `${baseMaterial.name}` : `YENİ ÜRÜN - ${parsedData.barcode}`,
-      allBarcode: parsedData.barcode ? `01${parsedData.gtin || parsedData.barcode}17${new Date().toISOString().slice(2,10)}30${parsedData.barcode.length}` : ''
+      allBarcode: allBarcodeInput || ''
     };
 
     const newMaterial = dataService.saveMaterial(newMaterialData);
     
-    // Malzemeleri yenile
     loadMaterials();
     
     return newMaterial;
   };
 
+  // SN girişi için modal
+  const [showSNModal, setShowSNModal] = useState(false);
+  const [currentParsedData, setCurrentParsedData] = useState<{barcode: string, gtin: string, sn: string} | null>(null);
+  const [snInput, setSnInput] = useState('');
+  const [allBarcodeInput, setAllBarcodeInput] = useState('');
+
   const handleBarcodeInput = async (value: string) => {
     setBarcode(value);
+    setAllBarcodeInput(value);
     
     if (value.trim()) {
       loadMaterials();
@@ -138,74 +136,99 @@ function QuickCountModal({
       if (value.startsWith('01') && value.length >= 30) {
         parsedData = parseAllBarcode(value);
         
-        // Eğer parse edilemediyse orijinal değeri kullan
         if (!parsedData.barcode && !parsedData.gtin) {
           parsedData.barcode = value;
         }
       }
       
-      // Session'a göre filtrele
-      const filteredMaterials = materials.filter(m => 
-        !session.sessionStatus || m.status === session.sessionStatus
-      );
+      setCurrentParsedData(parsedData);
       
-      // Barkod/GTIN ile ara (SN ile değil)
-      let material: Material | undefined;
-      
-      if (parsedData.barcode) {
-        material = findMaterialByBarcode(parsedData.barcode);
-      }
-      
-      if (!material && parsedData.gtin) {
-        material = findMaterialByBarcode(parsedData.gtin);
-      }
-      
-      if (material) {
-        // Barkod bulundu, ürün bilgilerini getir
-        // Oturum statüsü kontrolü
-        if (session.sessionStatus && material.status !== session.sessionStatus) {
-          alert(`"${material.name}" malzemesi bu oturum statüsüne uygun değil! Malzeme statüsü: ${material.status}`);
-          setBarcode('');
-          return;
-        }
-        
-        // Malzemeyi sayım listesine ekle
-        const existingIndex = countedItems.findIndex(item => item.material.id === material!.id);
-        
-        if (existingIndex >= 0) {
-          const newItems = [...countedItems];
-          newItems[existingIndex].quantity += 1;
-          setCountedItems(newItems);
-        } else {
-          setCountedItems([...countedItems, { material, quantity: 1 }]);
-        }
-        
-        setBarcode('');
-      } else {
-        // Malzeme bulunamadı, yeni malzeme oluştur
-        if (parsedData.barcode || parsedData.gtin) {
-          // Benzer barkodlu malzeme ara (temel bilgiler için)
-          const similarMaterial = findSimilarMaterialByBarcode(parsedData.barcode || parsedData.gtin);
-          const newMaterial = createNewMaterial(parsedData, similarMaterial);
-          
-          // Yeni malzemeyi sayım listesine ekle
-          setCountedItems([...countedItems, { material: newMaterial, quantity: 1 }]);
-          setBarcode('');
-          
-          alert(`Yeni malzeme oluşturuldu: ${newMaterial.name}\nBarkod: ${newMaterial.barcode}\nSN: (Kullanıcı tarafından girilecek)`);
-        } else {
-          console.log('Malzeme bulunamadı. Arama girişimi kaydedildi:', value);
-          setSearchAttempts(prev => [...prev, value]);
-          
-          alert(`"${value}" kodu ile eşleşen malzeme bulunamadı veya bu malzeme statüsü bu oturum için uygun değil.\n\n` +
-                `Lütfen kontrol edin:\n` +
-                `1. Malzeme Yönetimi'nde bu koda sahip malzeme var mı?\n` +
-                `2. Malzeme statüsü oturum statüsü ile uyumlu mu?\n` +
-                `3. Kod doğru girildi mi?`);
-          setBarcode('');
-        }
-      }
+      // SN giriş modalını aç
+      setShowSNModal(true);
     }
+  };
+
+  const handleSNSubmit = () => {
+    if (!snInput.trim() || !currentParsedData) {
+      alert('Lütfen SN numarası giriniz!');
+      return;
+    }
+
+    // SN kontrolü - aynı SN var mı?
+    const existingMaterialWithSN = findMaterialBySN(snInput.trim());
+    
+    if (existingMaterialWithSN) {
+      // Aynı SN var, mevcut malzemeyi kullan
+      if (session.sessionStatus && existingMaterialWithSN.status !== session.sessionStatus) {
+        alert(`SN ${snInput} ile kayıtlı malzeme bu oturum statüsüne uygun değil!`);
+        setSnInput('');
+        setShowSNModal(false);
+        return;
+      }
+      
+      // Malzemeyi sayım listesine ekle
+      const existingIndex = countedItems.findIndex(item => item.material.id === existingMaterialWithSN.id);
+      
+      if (existingIndex >= 0) {
+        const newItems = [...countedItems];
+        newItems[existingIndex].quantity += 1;
+        setCountedItems(newItems);
+      } else {
+        setCountedItems([...countedItems, { material: existingMaterialWithSN, quantity: 1 }]);
+      }
+      
+      alert(`SN ${snInput} zaten sistemde kayıtlı. "${existingMaterialWithSN.name}" malzemesinin stoğu güncellendi.`);
+    } else {
+      // Yeni malzeme oluştur
+      // Önce barkod/GTIN ile mevcut malzeme var mı kontrol et
+      let baseMaterial: Material | undefined;
+      
+      if (currentParsedData.barcode) {
+        baseMaterial = findMaterialByBarcode(currentParsedData.barcode);
+      }
+      
+      if (!baseMaterial && currentParsedData.gtin) {
+        baseMaterial = findMaterialByBarcode(currentParsedData.gtin);
+      }
+      
+      // Yeni malzeme oluştur
+      const newMaterialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: baseMaterial ? baseMaterial.name : `YENİ ÜRÜN - ${currentParsedData.barcode}`,
+        barcode: currentParsedData.barcode,
+        gtin: currentParsedData.gtin || '',
+        sn: snInput.trim(),
+        category: baseMaterial ? baseMaterial.category : 'Diğer',
+        subCategory: baseMaterial ? baseMaterial.subCategory : '',
+        unit: baseMaterial ? baseMaterial.unit : 'adet',
+        unitPrice: baseMaterial ? baseMaterial.unitPrice : 0,
+        currentStock: 1,
+        minStock: baseMaterial ? baseMaterial.minStock : 0,
+        minStockLevel: baseMaterial ? baseMaterial.minStockLevel : 0,
+        supplier: baseMaterial ? baseMaterial.supplier : '',
+        isActive: true,
+        status: baseMaterial ? baseMaterial.status : 'normal',
+        expirationDate: baseMaterial ? baseMaterial.expirationDate : '',
+        serialNoStatus: '',
+        materialDescription: '',
+        intuitiveCode: '',
+        serialNumber: snInput.trim(),
+        udiCode: baseMaterial ? baseMaterial.udiCode : '',
+        allBarcode: allBarcodeInput
+      };
+
+      const newMaterial = dataService.saveMaterial(newMaterialData);
+      loadMaterials();
+      
+      // Yeni malzemeyi sayım listesine ekle
+      setCountedItems([...countedItems, { material: newMaterial, quantity: 1 }]);
+      
+      alert(`Yeni malzeme oluşturuldu: ${newMaterial.name}\nSN: ${newMaterial.sn}`);
+    }
+    
+    setSnInput('');
+    setShowSNModal(false);
+    setBarcode('');
+    setAllBarcodeInput('');
   };
 
   const handleManualAdd = () => {
@@ -245,12 +268,11 @@ function QuickCountModal({
         currentStock: newStock
       });
       
-      // Loglama
       dataService.logAction({
         action: 'STOK_GÜNCELLENDİ',
         module: 'STOK_TAKİP',
         recordId: item.material.barcode,
-        details: `${item.material.name} (SN: ${item.material.sn || 'SN yok'}) stoğu ${item.quantity} adet artırıldı. Yeni stok: ${newStock}`,
+        details: `${item.material.name} (SN: ${item.material.sn}) stoğu ${item.quantity} adet artırıldı. Yeni stok: ${newStock}`,
         performedBy: dataService.getCurrentUser().name,
       });
     });
@@ -282,7 +304,7 @@ function QuickCountModal({
   };
 
   const handleManualSearch = () => {
-    const searchCode = prompt('Aramak istediğiniz Barkod/GTIN/UDI/All Barcode kodunu girin:');
+    const searchCode = prompt('Aramak istediğiniz Barkod/GTIN/All Barcode kodunu girin:');
     if (searchCode && searchCode.trim()) {
       handleBarcodeInput(searchCode.trim());
     }
@@ -312,7 +334,7 @@ function QuickCountModal({
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Barkod/GTIN/UDI Code/All Barcode
+                    Barkod/GTIN/All Barcode
                   </label>
                   <div className="flex space-x-2">
                     <input
@@ -338,7 +360,7 @@ function QuickCountModal({
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Barkod, GTIN, UDI Code veya All Barcode girebilirsiniz
+                    Barkod, GTIN veya All Barcode girebilirsiniz
                   </p>
                 </div>
 
@@ -433,8 +455,8 @@ function QuickCountModal({
                   <table className="w-full">
                     <thead className="bg-gray-100">
                       <tr>
+                        <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Ürün Adı</th>
                         <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Barkod/GTIN</th>
-                        <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Malzeme</th>
                         <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">SN</th>
                         <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Birim Fiyat</th>
                         <th className="text-left py-2 px-4 text-sm font-medium text-gray-700">Adet</th>
@@ -446,17 +468,17 @@ function QuickCountModal({
                       {countedItems.map((item, index) => (
                         <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-2 px-4">
+                            <div className="font-medium text-sm">{item.material.name}</div>
+                            <div className="text-xs text-gray-600">{item.material.category}</div>
+                          </td>
+                          <td className="py-2 px-4">
                             <div className="text-sm font-mono">{item.material.barcode}</div>
                             {item.material.gtin && (
                               <div className="text-xs text-gray-500">GTIN: {item.material.gtin}</div>
                             )}
                           </td>
                           <td className="py-2 px-4">
-                            <div className="font-medium text-sm">{item.material.name}</div>
-                            <div className="text-xs text-gray-600">{item.material.category}</div>
-                          </td>
-                          <td className="py-2 px-4">
-                            <div className="text-sm font-mono">{item.material.sn || 'Girilmedi'}</div>
+                            <div className="text-sm font-mono">{item.material.sn || 'Yok'}</div>
                           </td>
                           <td className="py-2 px-4 text-sm">
                             ₺{item.material.unitPrice.toFixed(2)}
@@ -523,7 +545,6 @@ function QuickCountModal({
                     <ul className="list-disc list-inside mt-1">
                       <li>Barkod</li>
                       <li>GTIN</li>
-                      <li>UDI Code</li>
                       <li>All Barcode</li>
                     </ul>
                   </div>
@@ -574,6 +595,77 @@ function QuickCountModal({
             }}
             onClose={() => setShowScanner(false)}
           />
+        )}
+
+        {/* SN Giriş Modal */}
+        {showSNModal && currentParsedData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">SN Numarası Girin</h3>
+                <button onClick={() => {
+                  setShowSNModal(false);
+                  setSnInput('');
+                  setCurrentParsedData(null);
+                }} className="text-gray-500 hover:text-gray-700">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 mb-2">All Barkod Çözümlendi</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Barkod:</span>
+                      <div className="font-mono">{currentParsedData.barcode}</div>
+                    </div>
+                    <div>
+                      <span className="font-medium">GTIN:</span>
+                      <div className="font-mono">{currentParsedData.gtin}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    SN Numarası *
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                    value={snInput}
+                    onChange={(e) => setSnInput(e.target.value)}
+                    placeholder="Örnek: 6S250586007"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Her lensin benzersiz SN numarasını girin
+                  </p>
+                </div>
+                
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowSNModal(false);
+                      setSnInput('');
+                      setCurrentParsedData(null);
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={handleSNSubmit}
+                    disabled={!snInput.trim()}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                  >
+                    Tamam
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -674,14 +766,14 @@ function BarcodeScannerModal({ onScan, onClose }: { onScan: (barcode: string) =>
           <form onSubmit={handleManualSubmit} className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Veya barkodu manuel girin (Barkod/GTIN/UDI/All Barcode):
+                Veya barkodu manuel girin (Barkod/GTIN/All Barcode):
               </label>
               <input
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={manualBarcode}
                 onChange={(e) => setManualBarcode(e.target.value)}
-                placeholder="Barkod, GTIN, UDI veya All Barcode numarasını girin"
+                placeholder="Barkod, GTIN veya All Barcode numarasını girin"
                 autoFocus
               />
             </div>
@@ -720,7 +812,6 @@ interface CountingInterfaceModalProps {
 function CountingInterfaceModal({ session, materials, onSave, onClose }: CountingInterfaceModalProps) {
   const [barcode, setBarcode] = useState('');
   const [currentMaterial, setCurrentMaterial] = useState<Material | null>(null);
-  const [showManualEntry, setShowManualEntry] = useState(false);
   const [countedQuantity, setCountedQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -730,6 +821,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
   const [editableExpiration, setEditableExpiration] = useState('');
   const [snCheckResult, setSnCheckResult] = useState<{exists: boolean, material?: Material} | null>(null);
   const [lastScannedCode, setLastScannedCode] = useState('');
+  const [baseMaterialInfo, setBaseMaterialInfo] = useState<Material | null>(null);
 
   // Sayım arayüzü açıldığında malzemeleri yükle
   useEffect(() => {
@@ -737,21 +829,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     setAllMaterials(loadedMaterials);
   }, []);
 
-  // Malzeme değiştiğinde SN ve SKT'yi güncelle
-  useEffect(() => {
-    if (currentMaterial) {
-      setEditableSN(currentMaterial.sn || '');
-      setEditableExpiration(currentMaterial.expirationDate || '');
-      // SN kontrolü yap
-      checkSN(currentMaterial.sn || '');
-    } else {
-      setEditableSN('');
-      setEditableExpiration('');
-      setSnCheckResult(null);
-    }
-  }, [currentMaterial]);
-
-  // All Barkod'dan barkod ve GTIN çıkarma fonksiyonu (SN ÇIKARILDI)
+  // All Barkod'dan sadece barkod ve GTIN çıkarma fonksiyonu
   const parseAllBarcode = (allBarcode: string) => {
     let barcode = '';
     let gtin = '';
@@ -759,17 +837,11 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     try {
       // All Barcode formatı: 01...17...21...30...
       if (allBarcode.startsWith('01') && allBarcode.length >= 30) {
-        // 01 (GTIN) kısmını bul
+        // 01 (GTIN) kısmını bul - 14 haneli
         const gtinMatch = allBarcode.match(/01(\d{14})/);
         if (gtinMatch && gtinMatch[1]) {
           gtin = gtinMatch[1];
           barcode = gtinMatch[1].replace(/^0+/, ''); // Baştaki sıfırları kaldır
-        }
-        
-        // 21 (SN) kısmını BULMADAN ATLA - sadece debug için göster
-        const snMatch = allBarcode.match(/21(\d+)/);
-        if (snMatch) {
-          console.log('DEBUG: All Barcode içinde SN bulundu:', snMatch[1], 'ama kullanılmıyor');
         }
       } else {
         barcode = allBarcode;
@@ -782,11 +854,11 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     return {
       barcode: barcode,
       gtin: gtin,
-      sn: '' // SN BURADA BOŞ - kullanıcı girecek
+      sn: '' // SN BOŞ BIRAK - kullanıcı girecek
     };
   };
 
-  // Barkod numarasına göre malzeme bulma (SN hariç)
+  // Barkod numarasına göre malzeme bulma
   const findMaterialByBarcode = (code: string, materialsToSearch: Material[]) => {
     return materialsToSearch.find(m => 
       m.barcode === code ||
@@ -826,7 +898,6 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     setLastScannedCode(value);
     
     if (value) {
-      // Malzemeleri yenile
       const refreshedMaterials = dataService.getMaterials();
       setAllMaterials(refreshedMaterials);
       
@@ -841,47 +912,35 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
         setParsedData(parsed);
       }
       
-      // Session'a göre filtrele
-      const filteredMaterials = allMaterials.filter(m => 
-        !session.sessionStatus || m.status === session.sessionStatus
-      );
-      
-      // Barkod/GTIN ile ara (SN ile değil)
-      let material: Material | undefined;
+      // Barkod/GTIN ile temel malzeme bilgilerini bul
+      let baseMaterial: Material | undefined;
       
       if (parsed.barcode) {
-        material = findMaterialByBarcode(parsed.barcode, filteredMaterials);
+        baseMaterial = findMaterialByBarcode(parsed.barcode, refreshedMaterials);
       }
       
-      if (!material && parsed.gtin) {
-        material = findMaterialByBarcode(parsed.gtin, filteredMaterials);
+      if (!baseMaterial && parsed.gtin) {
+        baseMaterial = findMaterialByBarcode(parsed.gtin, refreshedMaterials);
       }
       
-      if (material) {
-        // Barkod bulundu, mevcut malzemeyi kullan
-        if (session.sessionStatus && material.status !== session.sessionStatus) {
-          alert(`"${material.name}" malzemesi bu oturum statüsüne uygun değil! Malzeme statüsü: ${material.status}`);
-          setBarcode('');
-          setParsedData({ barcode: '', gtin: '', sn: '' });
-          setCurrentMaterial(null);
-          return;
+      // Temel malzeme bilgilerini set et (SN olmadan)
+      setBaseMaterialInfo(baseMaterial || null);
+      
+      // Current material'ı temizle, kullanıcı SN girecek
+      setCurrentMaterial(null);
+      setEditableSN('');
+      setSnCheckResult(null);
+      
+      // SN giriş alanına focus yap
+      setTimeout(() => {
+        const snInput = document.getElementById('sn-input') as HTMLInputElement;
+        if (snInput) {
+          snInput.focus();
         }
-        
-        setCurrentMaterial(material);
-        setEditableSN(material.sn || '');
-        setEditableExpiration(material.expirationDate || '');
-        setShowManualEntry(false);
-        checkSN(material.sn || '');
-      } else {
-        // Malzeme bulunamadı, mevcut malzeme yok
-        setCurrentMaterial(null);
-        setEditableSN('');
-        setShowManualEntry(true);
-        setSnCheckResult(null);
-      }
+      }, 100);
     } else {
       setCurrentMaterial(null);
-      setShowManualEntry(false);
+      setBaseMaterialInfo(null);
       setParsedData({ barcode: '', gtin: '', sn: '' });
       setEditableSN('');
       setEditableExpiration('');
@@ -889,168 +948,147 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     }
   };
 
+  // SN değiştiğinde kontrol et
+  const handleSNChange = (value: string) => {
+    setEditableSN(value);
+    
+    if (value.trim()) {
+      checkSN(value);
+      
+      // Eğer temel malzeme bilgileri varsa, current material'ı oluştur
+      if (baseMaterialInfo || parsedData.barcode) {
+        const newMaterial: Material = {
+          id: 'temp-' + Date.now(),
+          name: baseMaterialInfo ? baseMaterialInfo.name : `Ürün - ${parsedData.barcode}`,
+          barcode: parsedData.barcode,
+          gtin: parsedData.gtin,
+          sn: value,
+          category: baseMaterialInfo ? baseMaterialInfo.category : 'Diğer',
+          subCategory: baseMaterialInfo ? baseMaterialInfo.subCategory : '',
+          unit: baseMaterialInfo ? baseMaterialInfo.unit : 'adet',
+          unitPrice: baseMaterialInfo ? baseMaterialInfo.unitPrice : 0,
+          currentStock: 0,
+          minStock: baseMaterialInfo ? baseMaterialInfo.minStock : 0,
+          minStockLevel: baseMaterialInfo ? baseMaterialInfo.minStockLevel : 0,
+          supplier: baseMaterialInfo ? baseMaterialInfo.supplier : '',
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: baseMaterialInfo ? baseMaterialInfo.status : 'normal',
+          expirationDate: baseMaterialInfo ? baseMaterialInfo.expirationDate : '',
+          serialNoStatus: '',
+          materialDescription: '',
+          intuitiveCode: '',
+          serialNumber: value,
+          udiCode: baseMaterialInfo ? baseMaterialInfo.udiCode : '',
+          allBarcode: barcode
+        };
+        
+        setCurrentMaterial(newMaterial);
+        setEditableExpiration(baseMaterialInfo ? baseMaterialInfo.expirationDate || '' : '');
+      }
+    } else {
+      setCurrentMaterial(null);
+      setSnCheckResult(null);
+    }
+  };
+
   const handleSaveCount = () => {
-    if (!currentMaterial) {
-      alert('Lütfen önce malzeme bilgilerini giriniz!');
+    if (!currentMaterial || !editableSN.trim()) {
+      alert('Lütfen SN numarası giriniz!');
       return;
     }
 
-    // SN kontrolü yap
-    if (editableSN.trim()) {
-      const existingMaterialWithSN = allMaterials.find(m => m.sn === editableSN && m.id !== currentMaterial.id);
-      if (existingMaterialWithSN) {
-        alert(`SN ${editableSN} zaten başka bir malzemede kayıtlı!\n\n` +
-              `Malzeme: ${existingMaterialWithSN.name}\n` +
-              `Barkod: ${existingMaterialWithSN.barcode}\n` +
-              `Bu malzemenin stoğu güncellenecek.`);
-        
-        // SN zaten varsa, o malzemenin stoğunu güncelle
-        const newStock = existingMaterialWithSN.currentStock + countedQuantity;
-        dataService.updateMaterial(existingMaterialWithSN.id, {
-          currentStock: newStock
-        });
-        
-        // Ve sayım kaydını o malzeme için oluştur
-        const countData: Omit<StockCount, 'id' | 'createdAt'> = {
-          sessionId: session.id,
-          materialId: existingMaterialWithSN.id,
-          barcode: barcode,
-          countedQuantity: countedQuantity,
-          unitPrice: existingMaterialWithSN.unitPrice,
-          totalValue: countedQuantity * existingMaterialWithSN.unitPrice,
-          countDate: session.countDate,
-          countedBy: session.countedBy,
-          status: 'tamamlandı',
-          notes: notes + ` (SN çakışması - orijinal malzeme: ${currentMaterial.name})`,
-          verifiedBy: '',
-          verifiedAt: '',
-          correctionNotes: ''
-        };
-        
-        onSave(countData);
-        
-        // Formu temizle
-        setBarcode('');
-        setCurrentMaterial(null);
-        setCountedQuantity(1);
-        setNotes('');
-        setShowManualEntry(false);
-        setParsedData({ barcode: '', gtin: '', sn: '' });
-        setEditableSN('');
-        setEditableExpiration('');
-        setSnCheckResult(null);
-        return;
-      }
+    // SN kontrolü - eğer SN zaten varsa
+    if (snCheckResult && snCheckResult.exists && snCheckResult.material) {
+      // Mevcut malzemenin stoğunu güncelle
+      const newStock = snCheckResult.material.currentStock + countedQuantity;
+      dataService.updateMaterial(snCheckResult.material.id, {
+        currentStock: newStock
+      });
+      
+      // Sayım kaydını oluştur
+      const countData: Omit<StockCount, 'id' | 'createdAt'> = {
+        sessionId: session.id,
+        materialId: snCheckResult.material.id,
+        barcode: barcode,
+        countedQuantity: countedQuantity,
+        unitPrice: snCheckResult.material.unitPrice,
+        totalValue: countedQuantity * snCheckResult.material.unitPrice,
+        countDate: session.countDate,
+        countedBy: session.countedBy,
+        status: 'tamamlandı',
+        notes: notes,
+        verifiedBy: '',
+        verifiedAt: '',
+        correctionNotes: ''
+      };
+      
+      onSave(countData);
+      
+      alert(`SN ${editableSN} zaten sistemde kayıtlı. "${snCheckResult.material.name}" malzemesinin stoğu güncellendi.`);
+    } else {
+      // Yeni malzeme oluştur
+      const materialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: baseMaterialInfo ? baseMaterialInfo.name : `Ürün - ${parsedData.barcode}`,
+        barcode: parsedData.barcode,
+        gtin: parsedData.gtin,
+        sn: editableSN,
+        category: baseMaterialInfo ? baseMaterialInfo.category : 'Diğer',
+        subCategory: baseMaterialInfo ? baseMaterialInfo.subCategory : '',
+        unit: baseMaterialInfo ? baseMaterialInfo.unit : 'adet',
+        unitPrice: baseMaterialInfo ? baseMaterialInfo.unitPrice : 0,
+        currentStock: countedQuantity,
+        minStock: baseMaterialInfo ? baseMaterialInfo.minStock : 0,
+        minStockLevel: baseMaterialInfo ? baseMaterialInfo.minStockLevel : 0,
+        supplier: baseMaterialInfo ? baseMaterialInfo.supplier : '',
+        isActive: true,
+        status: baseMaterialInfo ? baseMaterialInfo.status : 'normal',
+        expirationDate: editableExpiration,
+        serialNoStatus: '',
+        materialDescription: '',
+        intuitiveCode: '',
+        serialNumber: editableSN,
+        udiCode: baseMaterialInfo ? baseMaterialInfo.udiCode : '',
+        allBarcode: barcode
+      };
+      
+      const newMaterial = dataService.saveMaterial(materialData);
+      
+      // Sayım kaydını oluştur
+      const countData: Omit<StockCount, 'id' | 'createdAt'> = {
+        sessionId: session.id,
+        materialId: newMaterial.id,
+        barcode: barcode,
+        countedQuantity: countedQuantity,
+        unitPrice: newMaterial.unitPrice,
+        totalValue: countedQuantity * newMaterial.unitPrice,
+        countDate: session.countDate,
+        countedBy: session.countedBy,
+        status: 'tamamlandı',
+        notes: notes,
+        verifiedBy: '',
+        verifiedAt: '',
+        correctionNotes: ''
+      };
+      
+      onSave(countData);
+      
+      alert(`Yeni malzeme oluşturuldu: ${newMaterial.name}\nSN: ${newMaterial.sn}`);
     }
-
-    // ÖNEMLİ: Malzeme bilgilerini güncelle (SKT ve SN dahil)
-    const updateData: any = {};
-    
-    if (editableExpiration !== currentMaterial.expirationDate) {
-      updateData.expirationDate = editableExpiration;
-    }
-    
-    if (editableSN !== currentMaterial.sn) {
-      updateData.sn = editableSN;
-    }
-    
-    // Diğer alanları da güncelle
-    updateData.name = currentMaterial.name;
-    updateData.category = currentMaterial.category;
-    updateData.barcode = currentMaterial.barcode;
-    updateData.gtin = currentMaterial.gtin;
-    updateData.udiCode = currentMaterial.udiCode;
-    updateData.currentStock = currentMaterial.currentStock;
-    updateData.unitPrice = currentMaterial.unitPrice;
-    updateData.supplier = currentMaterial.supplier;
-    updateData.minStock = currentMaterial.minStock;
-    updateData.status = currentMaterial.status;
-
-    dataService.updateMaterial(currentMaterial.id, updateData);
-
-    const countData: Omit<StockCount, 'id' | 'createdAt'> = {
-      sessionId: session.id,
-      materialId: currentMaterial.id,
-      barcode: barcode,
-      countedQuantity: countedQuantity,
-      unitPrice: currentMaterial.unitPrice,
-      totalValue: countedQuantity * currentMaterial.unitPrice,
-      countDate: session.countDate,
-      countedBy: session.countedBy,
-      status: 'tamamlandı',
-      notes: notes,
-      verifiedBy: '',
-      verifiedAt: '',
-      correctionNotes: ''
-    };
-
-    // MALZEMENİN STOĞUNU GÜNCELLE
-    const newStock = currentMaterial.currentStock + countedQuantity;
-    dataService.updateMaterial(currentMaterial.id, {
-      currentStock: newStock
-    });
-
-    onSave(countData);
 
     // Formu temizle ve sonraki ürüne geç
     setBarcode('');
     setCurrentMaterial(null);
+    setBaseMaterialInfo(null);
     setCountedQuantity(1);
     setNotes('');
-    setShowManualEntry(false);
     setParsedData({ barcode: '', gtin: '', sn: '' });
     setEditableSN('');
     setEditableExpiration('');
     setSnCheckResult(null);
-  };
-
-  const handleManualMaterialSave = (materialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'>) => {
-    // SN kontrolü yap
-    if (materialData.sn) {
-      const existingMaterialWithSN = allMaterials.find(m => m.sn === materialData.sn);
-      if (existingMaterialWithSN) {
-        alert(`SN ${materialData.sn} zaten sistemde kayıtlı!\n\n` +
-              `Malzeme: ${existingMaterialWithSN.name}\n` +
-              `Barkod: ${existingMaterialWithSN.barcode}\n\n` +
-              `Mevcut malzeme kullanılacak.`);
-        
-        setCurrentMaterial(existingMaterialWithSN);
-        setEditableSN(existingMaterialWithSN.sn || '');
-        setEditableExpiration(existingMaterialWithSN.expirationDate || '');
-        setShowManualEntry(false);
-        checkSN(existingMaterialWithSN.sn || '');
-        return;
-      }
-    }
     
-    const newMaterial = dataService.saveMaterial(materialData);
-    
-    // Malzemeleri tekrar yenile
-    const updatedMaterials = dataService.getMaterials();
-    setAllMaterials(updatedMaterials);
-    
-    setCurrentMaterial(newMaterial);
-    setEditableSN(newMaterial.sn || '');
-    setEditableExpiration(newMaterial.expirationDate || '');
-    setShowManualEntry(false);
-    checkSN(newMaterial.sn || '');
-  };
-
-  const handleUpdateMaterialField = (field: keyof Material, value: any) => {
-    if (!currentMaterial) return;
-    
-    const updatedMaterial = {...currentMaterial, [field]: value};
-    setCurrentMaterial(updatedMaterial);
-    
-    // SN değiştiyse kontrol et
-    if (field === 'sn') {
-      checkSN(value);
-    }
-  };
-
-  const handleSaveAndNext = () => {
-    handleSaveCount();
-    // Input'a focus yap
+    // Barkod input'una focus yap
     setTimeout(() => {
       const barcodeInput = document.querySelector('input[type="text"]') as HTMLInputElement;
       if (barcodeInput) {
@@ -1059,10 +1097,16 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
     }, 100);
   };
 
-  // SN değiştiğinde kontrol et
-  const handleSNChange = (value: string) => {
-    setEditableSN(value);
-    checkSN(value);
+  const handleSaveAndNext = () => {
+    handleSaveCount();
+  };
+
+  // Mevcut malzeme bilgilerini güncelle
+  const updateMaterialField = (field: keyof Material, value: any) => {
+    if (!currentMaterial) return;
+    
+    const updatedMaterial = {...currentMaterial, [field]: value};
+    setCurrentMaterial(updatedMaterial);
   };
 
   return (
@@ -1123,7 +1167,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Barkod/GTIN/UDI Code/All Barcode *
+                Barkod/GTIN/All Barcode *
               </label>
               <div className="flex space-x-2">
                 <input
@@ -1132,7 +1176,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                   className="flex-1 px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
                   value={barcode}
                   onChange={(e) => handleBarcodeChange(e.target.value)}
-                  placeholder="Barkod, GTIN, UDI Code veya All Barcode girin"
+                  placeholder="Barkod, GTIN veya All Barcode girin"
                   autoFocus
                 />
                 <button
@@ -1145,7 +1189,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Barkod, GTIN, UDI Code veya All Barcode girebilirsiniz
+                Barkod, GTIN veya All Barcode girebilirsiniz
               </p>
               
               {/* All Barkod parse edilmişse bilgileri göster */}
@@ -1168,8 +1212,63 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
               )}
             </div>
 
+            {/* Temel Malzeme Bilgileri (Eğer varsa) */}
+            {baseMaterialInfo && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-3">Temel Malzeme Bilgileri</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Malzeme Adı:</span>
+                    <div className="font-medium">{baseMaterialInfo.name}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium">Kategori:</span>
+                    <div>{baseMaterialInfo.category}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium">Barkod:</span>
+                    <div className="font-mono">{baseMaterialInfo.barcode}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium">GTIN:</span>
+                    <div className="font-mono">{baseMaterialInfo.gtin || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium">Birim Fiyat:</span>
+                    <div>₺{baseMaterialInfo.unitPrice.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium">Tedarikçi:</span>
+                    <div>{baseMaterialInfo.supplier}</div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mt-3">
+                  Bu malzemenin farklı SN'li versiyonunu sayıyorsunuz. Lütfen SN numarasını girin.
+                </p>
+              </div>
+            )}
+
+            {/* SN Giriş */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                SN Numarası *
+              </label>
+              <input
+                id="sn-input"
+                type="text"
+                required
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                value={editableSN}
+                onChange={(e) => handleSNChange(e.target.value)}
+                placeholder="Örnek: 6S250586007"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Her lensin benzersiz SN numarasını girin
+              </p>
+            </div>
+
             {/* SN Kontrol Mesajı */}
-            {snCheckResult && editableSN && (
+            {snCheckResult && (
               <div className={`p-3 rounded-lg border ${
                 snCheckResult.exists 
                   ? 'bg-yellow-50 border-yellow-200' 
@@ -1195,17 +1294,21 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                         <p className="mt-1">Bu malzemenin stoğu güncellenecek.</p>
                       </div>
                     )}
+                    {!snCheckResult.exists && baseMaterialInfo && (
+                      <div className="text-xs text-gray-600 mt-1">
+                        <p>Yeni malzeme oluşturulacak: {baseMaterialInfo.name}</p>
+                        <p>Barkod: {baseMaterialInfo.barcode}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
+            {/* Malzeme Bilgileri Düzenleme (SN girildikten sonra) */}
             {currentMaterial && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="mb-3">
-                  <h4 className="font-semibold text-green-800">Mevcut Malzeme Bilgileri</h4>
-                  <p className="text-xs text-gray-600">Malzeme bilgilerini istediğiniz zaman düzenleyebilirsiniz</p>
-                </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-3">Malzeme Bilgileri</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-medium">Malzeme Adı:</span>
@@ -1213,7 +1316,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                       type="text"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
                       value={currentMaterial.name}
-                      onChange={(e) => handleUpdateMaterialField('name', e.target.value)}
+                      onChange={(e) => updateMaterialField('name', e.target.value)}
                     />
                   </div>
                   <div>
@@ -1221,7 +1324,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                     <select
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
                       value={currentMaterial.category}
-                      onChange={(e) => handleUpdateMaterialField('category', e.target.value)}
+                      onChange={(e) => updateMaterialField('category', e.target.value)}
                     >
                       <option value="Diğer">Diğer</option>
                       <option value="Medikal">Medikal</option>
@@ -1238,27 +1341,8 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                       type="text"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
                       value={currentMaterial.barcode}
-                      onChange={(e) => handleUpdateMaterialField('barcode', e.target.value)}
+                      onChange={(e) => updateMaterialField('barcode', e.target.value)}
                     />
-                  </div>
-                  <div>
-                    <span className="font-medium">SN (Kullanıcı Girişi):</span>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                        value={editableSN}
-                        onChange={(e) => handleSNChange(e.target.value)}
-                        placeholder="SN numarasını girin"
-                      />
-                      <button
-                        onClick={() => handleUpdateMaterialField('sn', editableSN)}
-                        className="text-green-600 hover:text-green-800"
-                        title="SN'yi Kaydet"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                    </div>
                   </div>
                   <div>
                     <span className="font-medium">GTIN:</span>
@@ -1266,25 +1350,19 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                       type="text"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
                       value={currentMaterial.gtin || ''}
-                      onChange={(e) => handleUpdateMaterialField('gtin', e.target.value)}
+                      onChange={(e) => updateMaterialField('gtin', e.target.value)}
                     />
                   </div>
                   <div>
-                    <span className="font-medium">UDI Code:</span>
+                    <span className="font-medium">SN:</span>
                     <input
                       type="text"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
-                      value={currentMaterial.udiCode || ''}
-                      onChange={(e) => handleUpdateMaterialField('udiCode', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <span className="font-medium">Mevcut Stok:</span>
-                    <input
-                      type="number"
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
-                      value={currentMaterial.currentStock}
-                      onChange={(e) => handleUpdateMaterialField('currentStock', parseInt(e.target.value) || 0)}
+                      value={currentMaterial.sn}
+                      onChange={(e) => {
+                        updateMaterialField('sn', e.target.value);
+                        handleSNChange(e.target.value);
+                      }}
                     />
                   </div>
                   <div>
@@ -1294,7 +1372,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                       step="0.01"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
                       value={currentMaterial.unitPrice}
-                      onChange={(e) => handleUpdateMaterialField('unitPrice', parseFloat(e.target.value))}
+                      onChange={(e) => updateMaterialField('unitPrice', parseFloat(e.target.value))}
                     />
                   </div>
                   <div>
@@ -1303,103 +1381,48 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                       type="text"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
                       value={currentMaterial.supplier}
-                      onChange={(e) => handleUpdateMaterialField('supplier', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <span className="font-medium">Kritik Stok:</span>
-                    <input
-                      type="number"
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
-                      value={currentMaterial.minStock}
-                      onChange={(e) => handleUpdateMaterialField('minStock', parseInt(e.target.value))}
+                      onChange={(e) => updateMaterialField('supplier', e.target.value)}
                     />
                   </div>
                   <div>
                     <span className="font-medium">SKT (Son Kullanma Tarihi):</span>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="date"
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                        value={editableExpiration}
-                        onChange={(e) => setEditableExpiration(e.target.value)}
-                      />
-                      <button
-                        onClick={() => handleUpdateMaterialField('expirationDate', editableExpiration)}
-                        className="text-green-600 hover:text-green-800"
-                        title="SKT'yi Kaydet"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="font-medium">Statü:</span>
-                    <select
+                    <input
+                      type="date"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
-                      value={currentMaterial.status}
-                      onChange={(e) => handleUpdateMaterialField('status', e.target.value as MaterialStatus)}
-                    >
-                      <option value="normal">NORMAL</option>
-                      <option value="konsinye">KONSİNYE</option>
-                      <option value="iade">İADE</option>
-                      <option value="faturalı">FATURALI</option>
-                    </select>
+                      value={editableExpiration}
+                      onChange={(e) => setEditableExpiration(e.target.value)}
+                    />
                   </div>
                 </div>
               </div>
             )}
 
-            {showManualEntry && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-semibold text-yellow-800 mb-3">Yeni Malzeme Bilgilerini Girin</h4>
-                <ManualMaterialEntry
-                  barcode={barcode}
-                  parsedData={parsedData}
-                  categories={dataService.getCategories().map(c => c.name)}
-                  onSave={handleManualMaterialSave}
-                  onCancel={() => {
-                    setShowManualEntry(false);
-                    setBarcode('');
-                    setParsedData({ barcode: '', gtin: '', sn: '' });
-                    setEditableSN('');
-                    setEditableExpiration('');
-                    setSnCheckResult(null);
-                  }}
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sayılan Miktar *
+              </label>
+              <input
+                type="number"
+                required
+                min="1"
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                value={countedQuantity}
+                onChange={(e) => setCountedQuantity(Number(e.target.value))}
+              />
+            </div>
 
-            {!showManualEntry && currentMaterial && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sayılan Miktar *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-                    value={countedQuantity}
-                    onChange={(e) => setCountedQuantity(Number(e.target.value))}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notlar
-                  </label>
-                  <textarea
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Sayım ile ilgili notlar..."
-                  />
-                </div>
-              </>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notlar
+              </label>
+              <textarea
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Sayım ile ilgili notlar..."
+              />
+            </div>
           </div>
 
           {/* Oturum İstatistikleri */}
@@ -1460,9 +1483,11 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
                             <div className="text-xs text-gray-600">
                               {material?.sn ? `SN: ${material.sn}` : `Barkod: ${count.barcode}`}
                             </div>
-                            {lastScannedCode && (
-                              <div className="text-xs text-blue-600">
-                                Okunan: {lastScannedCode.substring(0, 20)}...
+                            {lastScannedCode && index === 0 && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                <div>Okunan: {lastScannedCode.substring(0, 20)}...</div>
+                                <div>Çözümlenen Barkod: {material?.barcode}</div>
+                                {material?.sn && <div>Girilen SN: {material.sn}</div>}
                               </div>
                             )}
                           </div>
@@ -1479,7 +1504,7 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
           </div>
         </div>
 
-        {!showManualEntry && currentMaterial && (
+        {currentMaterial && (
           <div className="flex justify-end space-x-3 pt-6 mt-6 border-t">
             <button
               onClick={onClose}
@@ -1506,416 +1531,6 @@ function CountingInterfaceModal({ session, materials, onSave, onClose }: Countin
         )}
       </div>
     </div>
-  );
-}
-
-// Manuel Malzeme Giriş Component
-interface ManualMaterialEntryProps {
-  barcode: string;
-  parsedData: { barcode: string; gtin: string; sn: string };
-  categories: string[];
-  onSave: (material: Omit<Material, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  onCancel: () => void;
-}
-
-function ManualMaterialEntry({ barcode, parsedData, categories, onSave, onCancel }: ManualMaterialEntryProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    subCategory: '',
-    currentStock: 1,
-    unitPrice: 0,
-    supplier: '',
-    unit: 'adet',
-    minStock: 0,
-    gtin: parsedData.gtin || '',
-    sn: '',
-    udiCode: '',
-    allBarcode: barcode,
-    status: 'normal' as MaterialStatus,
-    expirationDate: ''
-  });
-
-  const [snCheckResult, setSnCheckResult] = useState<{exists: boolean, material?: Material} | null>(null);
-
-  const units = ['adet', 'kutu', 'şişe', 'tüp', 'paket', 'ampul', 'kg', 'lt', 'metre'];
-  const statusOptions: MaterialStatus[] = ['normal', 'konsinye', 'iade', 'faturalı'];
-
-  useEffect(() => {
-    if (parsedData.barcode && !formData.gtin) {
-      setFormData(prev => ({
-        ...prev,
-        gtin: parsedData.gtin || '',
-      }));
-    }
-  }, [parsedData, barcode]);
-
-  // SN kontrolü yap
-  const checkSN = (sn: string) => {
-    if (!sn.trim()) {
-      setSnCheckResult(null);
-      return;
-    }
-    
-    const allMaterials = dataService.getMaterials();
-    const existingMaterialWithSN = allMaterials.find(m => m.sn === sn);
-    if (existingMaterialWithSN) {
-      setSnCheckResult({
-        exists: true,
-        material: existingMaterialWithSN
-      });
-    } else {
-      setSnCheckResult({ exists: false });
-    }
-  };
-
-  const handleSNChange = (value: string) => {
-    setFormData({ ...formData, sn: value });
-    checkSN(value);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name.trim()) {
-      alert('Lütfen malzeme adı giriniz!');
-      return;
-    }
-
-    // SN kontrolü
-    if (formData.sn) {
-      const allMaterials = dataService.getMaterials();
-      const existingMaterialWithSN = allMaterials.find(m => m.sn === formData.sn);
-      if (existingMaterialWithSN) {
-        alert(`SN ${formData.sn} zaten sistemde kayıtlı!\n\n` +
-              `Malzeme: ${existingMaterialWithSN.name}\n` +
-              `Barkod: ${existingMaterialWithSN.barcode}\n\n` +
-              `Mevcut malzeme kullanılacak.`);
-        
-        const materialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'> = {
-          name: existingMaterialWithSN.name,
-          barcode: existingMaterialWithSN.barcode,
-          category: existingMaterialWithSN.category,
-          subCategory: existingMaterialWithSN.subCategory,
-          unit: existingMaterialWithSN.unit,
-          unitPrice: existingMaterialWithSN.unitPrice,
-          currentStock: existingMaterialWithSN.currentStock + formData.currentStock, // Stok ekle
-          minStock: existingMaterialWithSN.minStock,
-          minStockLevel: existingMaterialWithSN.minStockLevel,
-          supplier: existingMaterialWithSN.supplier,
-          isActive: true,
-          gtin: existingMaterialWithSN.gtin,
-          sn: existingMaterialWithSN.sn,
-          udiCode: existingMaterialWithSN.udiCode,
-          allBarcode: existingMaterialWithSN.allBarcode,
-          expirationDate: existingMaterialWithSN.expirationDate,
-          serialNoStatus: existingMaterialWithSN.serialNoStatus,
-          materialDescription: existingMaterialWithSN.materialDescription,
-          intuitiveCode: existingMaterialWithSN.intuitiveCode,
-          serialNumber: existingMaterialWithSN.serialNumber,
-          status: existingMaterialWithSN.status
-        };
-
-        onSave(materialData);
-        return;
-      }
-    }
-
-    const materialData: Omit<Material, 'id' | 'createdAt' | 'updatedAt'> = {
-      name: formData.name,
-      barcode: parsedData.barcode || barcode,
-      category: formData.category,
-      subCategory: formData.subCategory,
-      unit: formData.unit,
-      unitPrice: formData.unitPrice,
-      currentStock: formData.currentStock,
-      minStock: formData.minStock,
-      minStockLevel: formData.minStock,
-      supplier: formData.supplier,
-      isActive: true,
-      gtin: formData.gtin,
-      sn: formData.sn,
-      udiCode: formData.udiCode,
-      allBarcode: formData.allBarcode,
-      expirationDate: formData.expirationDate,
-      serialNoStatus: '',
-      materialDescription: '',
-      intuitiveCode: '',
-      serialNumber: formData.sn,
-      status: formData.status
-    };
-
-    onSave(materialData);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Parsed Data Gösterimi */}
-      {parsedData.barcode && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-          <h5 className="font-semibold text-blue-800 mb-2">All Barkod Çözümlendi:</h5>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="font-medium block mb-1">Barkod:</span>
-              <div className="font-mono bg-white p-1 rounded">{parsedData.barcode}</div>
-            </div>
-            <div>
-              <span className="font-medium block mb-1">GTIN:</span>
-              <div className="font-mono bg-white p-1 rounded">{parsedData.gtin}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SN Kontrol Mesajı */}
-      {snCheckResult && formData.sn && (
-        <div className={`p-3 rounded-lg border ${
-          snCheckResult.exists 
-            ? 'bg-yellow-50 border-yellow-200' 
-            : 'bg-green-50 border-green-200'
-        }`}>
-          <div className="flex items-start space-x-2">
-            <AlertCircle className={`h-5 w-5 mt-0.5 ${
-              snCheckResult.exists ? 'text-yellow-600' : 'text-green-600'
-            }`} />
-            <div>
-              <p className={`text-sm font-medium ${
-                snCheckResult.exists ? 'text-yellow-800' : 'text-green-800'
-              }`}>
-                {snCheckResult.exists 
-                  ? `SN ${formData.sn} zaten sistemde kayıtlı!`
-                  : `SN ${formData.sn} sistemde kayıtlı değil.`
-                }
-              </p>
-              {snCheckResult.exists && snCheckResult.material && (
-                <div className="text-xs text-gray-600 mt-1">
-                  <p>Mevcut malzeme: {snCheckResult.material.name}</p>
-                  <p>Barkod: {snCheckResult.material.barcode}</p>
-                  <p className="mt-1">Bu malzemenin stoğu güncellenecek.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Malzeme Adı *
-          </label>
-          <input
-            type="text"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Örnek: CNWTTO.225 CLAREON PANOPTIX"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Kategori *
-          </label>
-          <select
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          >
-            <option value="">Kategori seçin</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            GTIN
-          </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.gtin}
-            onChange={(e) => setFormData({ ...formData, gtin: e.target.value })}
-            placeholder="GTIN kodu"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            SN (İsteğe Bağlı)
-          </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.sn}
-            onChange={(e) => handleSNChange(e.target.value)}
-            placeholder="Seri numarası (isteğe bağlı)"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Barkod *
-          </label>
-          <input
-            type="text"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={parsedData.barcode || barcode}
-            readOnly
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            All Barcode
-          </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.allBarcode}
-            onChange={(e) => setFormData({ ...formData, allBarcode: e.target.value })}
-            placeholder="All Barcode"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Alt Kategori
-        </label>
-        <input
-          type="text"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={formData.subCategory}
-          onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
-          placeholder="Alt kategori (isteğe bağlı)"
-        />
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Mevcut Stok
-          </label>
-          <input
-            type="number"
-            min="1"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.currentStock}
-            onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Birim Fiyat (₺)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.unitPrice}
-            onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Birim
-          </label>
-          <select
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.unit}
-            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-          >
-            {units.map(unit => (
-              <option key={unit} value={unit}>{unit}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tedarikçi
-          </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.supplier}
-            onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-            placeholder="Tedarikçi adı"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Kritik Stok
-          </label>
-          <input
-            type="number"
-            min="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.minStock}
-            onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            SKT (Son Kullanma Tarihi)
-          </label>
-          <input
-            type="date"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.expirationDate}
-            onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Statü
-          </label>
-          <select
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as MaterialStatus })}
-          >
-            {statusOptions.map(status => (
-              <option key={status} value={status}>{status.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="flex justify-end space-x-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors"
-        >
-          İptal
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          Malzemeyi Kaydet ve Sayıma Başla
-        </button>
-      </div>
-    </form>
   );
 }
 
@@ -1960,9 +1575,9 @@ function SessionDetailsModal({ sessionDetails, session, onClose, onViewPdf, onDe
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Barkod/GTIN/UDI</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">Ürün Adı</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700">Barkod/GTIN</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">SN</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Malzeme Adı</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Kategori</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Statü</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700">Sayılan Miktar</th>
@@ -1977,25 +1592,22 @@ function SessionDetailsModal({ sessionDetails, session, onClose, onViewPdf, onDe
             <tbody>
               {sessionDetails.map((detail, index) => (
                 <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-2">
+                      <Package className="h-4 w-4 text-gray-400" />
+                      <span className="font-medium">{detail.materialName}</span>
+                    </div>
+                  </td>
                   <td className="py-3 px-4 text-sm text-gray-600">
                     <div>
                       <div className="font-mono">{detail.barcode}</div>
                       {detail.materialGtin && detail.materialGtin !== '-' && (
                         <div className="text-xs text-gray-500">GTIN: {detail.materialGtin}</div>
                       )}
-                      {detail.materialUdiCode && detail.materialUdiCode !== '-' && (
-                        <div className="text-xs text-gray-500">UDI: {detail.materialUdiCode}</div>
-                      )}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-sm font-mono">
                     {detail.materialSn && detail.materialSn !== '-' ? detail.materialSn : '-'}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center space-x-2">
-                      <Package className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium">{detail.materialName}</span>
-                    </div>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600">{detail.materialCategory}</td>
                   <td className="py-3 px-4">
@@ -2380,7 +1992,6 @@ export default function StockCountManagement() {
     const allSessions = dataService.getStockCountSessions();
     const summaries = dataService.getSessionSummaries();
     
-    // Eğer oturum yoksa test oturumu oluştur
     if (allSessions.length === 0) {
       const testSession = dataService.saveStockCountSession({
         invoiceNo: 'TEST-001',
@@ -2395,7 +2006,6 @@ export default function StockCountManagement() {
       });
     }
 
-    // State'leri güncelle
     setStockCounts(allStockCounts);
     setSessions(dataService.getStockCountSessions());
     setSessionSummaries(dataService.getSessionSummaries());
@@ -2475,7 +2085,7 @@ export default function StockCountManagement() {
         action: 'STOK_GÜNCELLENDİ',
         module: 'STOK_TAKİP',
         recordId: material.barcode,
-        details: `${material.name} (SN: ${material.sn || 'SN yok'}) stoğu ${countData.countedQuantity} adet artırıldı. Yeni stok: ${newStock}`,
+        details: `${material.name} (SN: ${material.sn}) stoğu ${countData.countedQuantity} adet artırıldı. Yeni stok: ${newStock}`,
         performedBy: dataService.getCurrentUser().name,
       });
     }
