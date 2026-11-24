@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/ege-envanter.png" />
+    <link rel="apple-touch-icon" href="/ege-envanter.png">
+    <meta name="theme-color" content="#f4fbfd">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Ege Envanter - Stok takibi ve sayım yönetimi">
+    <meta name="keywords" content="stok takibi, sayım, malzeme yönetimi, ege envanter">
+    <meta name="author" content="Ege Envanter">
+    
+    <!-- PWA Metadata -->
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <title>Ege Envanter - Stok Takip Sistemi</title>
+    
+    <!-- Dashboard Tema Stilleri -->
+    <style>
+      /* BEYAZ ARKAPLAN VE SİYAH YAZI TEMASI */
+      :root {
+        --sidebar-width: 260px;
+        --header-height: 80px;
+        --color-primary-dark: #103854;    /* Koyu Lacivert */
+        --color-primary: #135369;         /* Lacivert */
+        --color-secondary: #087c89;       /* Turuncu */
+        --color-secondary-light: #34c9d5; /* Açık Turuncu */
+        --color-bg-main: #FFFFFF;         /* Beyaz Arkaplan */
+        --color-bg-content: #F9FAFB;      /* Açık Gri Arkaplan */
+        --color-text-dark: #000000;       /* Siyah Yazı */
+        --color-text-medium: #374151;     /* Koyu Gri */
+        --color-text-light: #6B7280;      /* Açık Gri */
+        --color-border: #E5E7EB;          /* Açık Gri Border */
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: var(--color-bg-main);
+        color: var(--color-text-dark);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Dashboard Layout */
+      .dashboard-container {
+        display: flex;
+        min-height: 100vh;
+        background: white;
+      }
+
+      /* SIDEBAR - KOYU LACİVERT */
+      .sidebar-dashboard {
+        width: var(--sidebar-width);
+        background: linear-gradient(180deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+        border-right: 3px solid var(--color-secondary);
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 100;
+        box-shadow: 0 4px 20px rgba(15, 27, 93, 0.2);
+      }
+
+      .sidebar-content {
+        padding: 24px 16px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Logo Alanı - Turuncu Logo */
+      .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 12px 32px 12px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-logo-icon {
+        width: 32px;
+        height: 32px;
+        color: var(--color-secondary);
+      }
+
+      .sidebar-logo h1 {
+        color: white;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      /* Navigation Menu */
+      .nav-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+      }
+
+      .nav-item-dashboard {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        border-radius: 10px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: left;
+      }
+
+      .nav-item-dashboard:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        transform: translateX(5px);
+      }
+
+      .nav-item-dashboard.active {
+        background: rgba(8, 124, 137, 0.2);
+        color: white;
+        border-left: 4px solid var(--color-secondary);
+      }
+
+      .nav-item-dashboard svg {
+        width: 20px;
+        height: 20px;
+        color: var(--color-secondary);
+      }
+
+      /* HEADER - KOYU LACİVERT */
+      .header-dashboard {
+        height: var(--header-height);
+        background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+        border-bottom: 3px solid var(--color-secondary);
+        position: sticky;
+        top: 0;
+        z-index: 90;
+        box-shadow: 0 4px 20px rgba(15, 27, 93, 0.2);
+      }
+
+      .header-content {
+        height: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 32px;
+        max-width: 100%;
+      }
+
+      /* User Info */
+      .user-info-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .user-avatar-header {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 18px;
+        box-shadow: 0 4px 12px rgba(8, 124, 137, 0.3);
+      }
+
+      .user-details-header h2 {
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .user-details-header p {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+      }
+
+      /* Header Actions */
+      .header-actions {
+        display: flex;
+        gap: 12px;
+      }
+
+      .header-action-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        backdrop-filter: blur(10px);
+      }
+
+      .header-action-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+      }
+
+      .header-action-btn svg {
+        width: 18px;
+        height: 18px;
+        color: var(--color-secondary);
+      }
+
+      /* MAIN CONTENT AREA - BEYAZ ARKAPLAN */
+      .main-content-dashboard {
+        flex: 1;
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
+        background: var(--color-bg-content);
+      }
+
+      .dashboard-content {
+        padding: 32px;
+        max-width: 100%;
+      }
+
+      /* Welcome Card - BEYAZ KART */
+      .welcome-card-dashboard {
+        background: white;
+        border-radius: 20px;
+        padding: 32px;
+        margin-bottom: 32px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--color-border);
+      }
+
+      .welcome-title-dashboard {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-text-dark);
+        margin-bottom: 8px;
+      }
+
+      .welcome-subtitle-dashboard {
+        font-size: 16px;
+        color: var(--color-text-medium);
+        margin-bottom: 16px;
+      }
+
+      .date-display-dashboard {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #F3F4F6;
+        color: var(--color-text-light);
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* Stats Grid - SİYAH YAZILI KARTLAR */
+      .stats-grid-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+      }
+
+      .stat-card-dashboard {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--color-border);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .stat-card-dashboard:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1);
+        border-color: var(--color-secondary);
+      }
+
+      .stat-card-title {
+        font-size: 14px;
+        color: var(--color-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+      }
+
+      .stat-card-value {
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--color-text-dark);
+        margin-bottom: 4px;
+      }
+
+      .stat-card-subtitle {
+        font-size: 14px;
+        color: #9CA3AF;
+      }
+
+      /* Content Cards - SİYAH YAZILI */
+      .content-grid-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 24px;
+      }
+
+      .content-card-dashboard {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--color-border);
+      }
+
+      .content-card-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-text-dark);
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--color-secondary);
+      }
+
+      /* MODERN BUTONLAR */
+      .btn-modern-dashboard {
+        background: linear-gradient(135deg, var(--color-primary) 0%, #3B82F6 100%);
+        color: white;
+        padding: 12px 28px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(30, 58, 138, 0.2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+      }
+
+      .btn-modern-dashboard:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(30, 58, 138, 0.3);
+        background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
+      }
+
+      .btn-modern-dashboard:active {
+        transform: translateY(0);
+      }
+
+      .btn-modern-secondary {
+        background: white;
+        color: var(--color-text-dark);
+        border: 2px solid var(--color-border);
+        padding: 12px 28px;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-modern-secondary:hover {
+        background: #F9FAFB;
+        border-color: var(--color-secondary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Table Stilleri */
+      .table-dashboard {
+        width: 100%;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--color-border);
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      }
+
+      .table-dashboard th {
+        background: var(--color-bg-content);
+        color: var(--color-text-dark);
+        font-weight: 600;
+        padding: 16px;
+        text-align: left;
+        border-bottom: 2px solid var(--color-border);
+      }
+
+      .table-dashboard td {
+        padding: 16px;
+        border-bottom: 1px solid var(--color-border);
+        color: var(--color-text-medium);
+      }
+
+      .table-dashboard tr:hover {
+        background: #F9FAFB;
+      }
+
+      /* Form Elementleri - SİYAH YAZILI */
+      .input-dashboard {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        background: white;
+        color: var(--color-text-dark);
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .input-dashboard:focus {
+        outline: none;
+        border-color: var(--color-secondary);
+        box-shadow: 0 0 0 3px rgba(8, 124, 137, 0.1);
+      }
+
+      .select-dashboard {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        background: white;
+        color: var(--color-text-dark);
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .select-dashboard:focus {
+        outline: none;
+        border-color: var(--color-secondary);
+        box-shadow: 0 0 0 3px rgba(8, 124, 137, 0.1);
+      }
+
+      /* Emergency Items */
+      .emergency-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .emergency-item-dashboard {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        margin-bottom: 12px;
+        background: #FEF3E2;
+        border-radius: 10px;
+        border-left: 4px solid var(--color-secondary);
+      }
+
+      .emergency-checkbox-dashboard {
+        width: 20px;
+        height: 20px;
+        margin-right: 12px;
+        accent-color: var(--color-secondary);
+        cursor: pointer;
+      }
+
+      .emergency-text-dashboard {
+        color: #7C2D12;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* Excel Upload */
+      .excel-upload-dashboard {
+        background: #F0F9FF;
+        border: 2px dashed #3B82F6;
+        border-radius: 12px;
+        padding: 40px 24px;
+        text-align: center;
+        margin-top: 16px;
+      }
+
+      .excel-upload-dashboard p {
+        color: #1E40AF;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .sidebar-dashboard {
+          width: 100%;
+          position: relative;
+          height: auto;
+        }
+
+        .main-content-dashboard {
+          margin-left: 0;
+        }
+
+        .dashboard-container {
+          flex-direction: column;
+        }
+
+        .content-grid-dashboard {
+          grid-template-columns: 1fr;
+        }
+
+        .stats-grid-dashboard {
+          grid-template-columns: 1fr;
+        }
+
+        .header-content {
+          flex-direction: column;
+          gap: 16px;
+          text-align: center;
+          padding: 20px 16px;
+        }
+
+        .user-info-header {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .header-actions {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+      }
+
+      /* Pre-loader */
+      .app-loading {
+        position: fixed;
+        inset: 0;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease-out;
+      }
+
+      .loading-logo {
+        margin-bottom: 24px;
+      }
+
+      .loading-logo svg {
+        width: 64px;
+        height: 64px;
+        color: var(--color-secondary);
+      }
+
+      .loading-text h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-primary-dark);
+        margin-bottom: 8px;
+      }
+
+      .loading-text p {
+        color: var(--color-text-medium);
+        font-size: 14px;
+      }
+
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #E5E7EB;
+        border-top: 4px solid var(--color-secondary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-top: 32px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .loading-progress {
+        width: 200px;
+        height: 4px;
+        background: #E5E7EB;
+        border-radius: 2px;
+        margin-top: 16px;
+        overflow: hidden;
+      }
+
+      .loading-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
+        animation: loading 2s ease-in-out infinite;
+      }
+
+      @keyframes loading {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(0%); }
+        100% { transform: translateX(100%); }
+      }
+
+      /* Animations */
+      .animate-glow-orange {
+        animation: glow-orange 2s ease-in-out infinite alternate;
+      }
+
+      @keyframes glow-orange {
+        from {
+          filter: drop-shadow(0 0 2px rgba(8, 124, 137, 0.5));
+        }
+        to {
+          filter: drop-shadow(0 0 8px rgba(8, 124, 137, 0.8));
+        }
+      }
+
+      /* Page Transition */
+      .page-transition-enter {
+        animation: pageSlideIn 0.3s ease-out forwards;
+      }
+
+      .page-transition-exit {
+        animation: pageSlideOut 0.3s ease-in forwards;
+      }
+
+      @keyframes pageSlideIn {
+        from {
+          opacity: 0;
+          transform: translateX(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes pageSlideOut {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-10px);
+        }
+      }
+    </style>
+    
+    <script>
+      // Pre-loader functionality
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loading = document.getElementById('loading');
+          const root = document.getElementById('root');
+          
+          if (loading) {
+            loading.style.opacity = '0';
+            loading.style.transition = 'opacity 0.3s ease-out';
+            
+            setTimeout(function() {
+              loading.style.display = 'none';
+              root.classList.add('loaded');
+            }, 300);
+          }
+        }, 800);
+      });
+
+      // Dashboard functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        // Set current date
+        function setCurrentDate() {
+          const now = new Date();
+          const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+          const dateStr = now.toLocaleDateString('tr-TR', options);
+          const dateElement = document.getElementById('currentDate');
+          if (dateElement) {
+            dateElement.textContent = dateStr;
+          }
+        }
+
+        // Handle emergency checkboxes
+        function handleEmergencyCheckboxes() {
+          document.querySelectorAll('.emergency-checkbox-dashboard').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+              const item = this.closest('.emergency-item-dashboard');
+              if (this.checked) {
+                item.style.opacity = '0.6';
+                item.style.textDecoration = 'line-through';
+              } else {
+                item.style.opacity = '1';
+                item.style.textDecoration = 'none';
+              }
+            });
+          });
+        }
+
+        // Handle Excel upload
+        function handleExcelUpload() {
+          const excelBtn = document.getElementById('excelUploadBtn');
+          if (excelBtn) {
+            excelBtn.addEventListener('click', function() {
+              alert('Excel dosyası yükleme özelliği aktif edilecek');
+            });
+          }
+        }
+
+        // Initialize dashboard
+        setCurrentDate();
+        handleEmergencyCheckboxes();
+        handleExcelUpload();
+
+        // Modern button hover effects
+        document.querySelectorAll('.btn-modern-dashboard').forEach(button => {
+          button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 8px 25px rgba(30, 58, 138, 0.3)';
+          });
+          
+          button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 15px rgba(30, 58, 138, 0.2)';
+          });
+        });
+      });
+
+      // Service Worker Registration for PWA
+    </script>
+  </head>
+  <body>
+    <!-- Pre-loader -->
+    <div id="loading" class="app-loading">
+      <div class="loading-logo"><img class="ege-brand-logo" src="/ege-envanter.png" alt="">
+      </div>
+      <div class="loading-text">
+        <h1>Ege Envanter</h1>
+        <p>Stok takibi ve sayım yönetimi</p>
+      </div>
+      <div class="loading-spinner"></div>
+      <div class="loading-progress">
+        <div class="loading-progress-bar"></div>
+      </div>
+    </div>
+    
+    <!-- Main App Container -->
+    <div id="root">
+      <!-- Dashboard will be rendered here by React -->
+    </div>
+    
+    <!-- Scripts -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

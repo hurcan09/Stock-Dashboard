@@ -1,0 +1,35 @@
+/* Keep the existing modules and their controls in the available viewport. */
+@media screen and (max-width: 1023px) {
+  #root { min-width: 0; -webkit-text-size-adjust: 100%; }
+  .stock-shell { padding-inline: env(safe-area-inset-left) env(safe-area-inset-right); padding-bottom: env(safe-area-inset-bottom); }
+  .stock-shell > div > header { padding-top: env(safe-area-inset-top); }
+  .phone-drawer { width: min(22rem, 92vw); height: 100dvh; overflow-y: auto; overscroll-behavior: contain; padding-block: env(safe-area-inset-top) env(safe-area-inset-bottom); }
+  #root :where(.flex, .grid) > :where(div, section, article, label, form) { min-inline-size: 0; }
+  #root :where(main, form, fieldset, .grid, .overflow-x-auto, .material-grid-layout) { min-inline-size: 0; max-inline-size: 100%; }
+  #root :where(.overflow-x-auto, .material-table-wrapper) { overscroll-behavior-x: contain; }
+  #root :where(input, select, textarea, img, canvas) { max-inline-size: 100%; }
+  #root :where(input:not([type=checkbox]):not([type=radio]), select, textarea) { font-size: max(16px, 1em); }
+  #root .fixed.inset-0.flex.items-center.justify-center { padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+  #root .fixed.inset-0.flex.items-center.justify-center > div:not(.absolute),
+  #root .modal-container { max-width: 100%; max-height: calc(100dvh - 2rem); overflow-y: auto; overscroll-behavior: contain; }
+}
+@media screen and (max-width: 1023px) {
+  #root { overflow-wrap: anywhere; }
+  #root .p-8, #root .p-6 { padding: clamp(12px, 3.5vw, 20px); }
+  #root .text-3xl { font-size: clamp(1.35rem, 5vw, 1.875rem); line-height: 1.2; }
+  #root .stock-shell header .space-x-4 { column-gap: 4px; }
+  #root .stock-shell header .space-x-4 > * { margin-inline-start: 0; }
+  #root .stock-shell header [aria-label="Kullanıcı menüsü"] { padding: 4px; }
+  #root :where(.grid-cols-2,.grid-cols-3,.grid-cols-4,.grid-cols-5,.grid-cols-6,.grid-cols-7) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
+  #root .col-span-2 { grid-column: 1 / -1; }
+  #root :where(main,.fixed.inset-0,.p-8) .flex:not(.flex-col):is(.justify-between,[class*="space-x-"]) { flex-wrap: wrap; gap: .5rem; }
+  #root :where(main,.fixed.inset-0,.p-8) .flex[class*="space-x-"] > * { margin-inline-start: 0; }
+  #root :where(main,.p-8,.fixed.inset-0) button { max-width: 100%; min-height: 44px; }
+  #root :where(main,form,.fixed.inset-0) :where(input:not([type=checkbox]):not([type=radio]),select) { min-width: 0; min-height: 44px; }
+  #root .material-toolbar, #root .material-search-bar { grid-template-columns: minmax(0,1fr); }
+  #root .material-toolbar, #root .material-bulk-actions, #root .pagination-container { flex-wrap: wrap; gap: .5rem; }
+  #root .material-table-container { min-height: 15rem; height: clamp(16rem, 58dvh, 36rem); }
+  #root .material-table :is(.sticky-left,.sticky-right) { position: static; }
+  #root .overflow-x-auto > table { width: max-content; min-width: 100%; }
+  #root .overflow-x-auto > table :where(th,td) { max-width: 16rem; white-space: normal; }
+}
